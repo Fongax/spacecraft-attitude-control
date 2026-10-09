@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About · Attitude Control: The Big Picture</title>
+<meta name="description" content="What the original student attitude-control project was, what this site adds, where every parameter comes from, how the results are reproduced, and the site's licences and privacy statement.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/about.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/pages/about.js"></script>
+</head>
+<body data-page="about">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container">
+    <h1>About this site</h1>
+    <p class="lede">This site rebuilds a student spacecraft attitude-control simulation project in the browser and maps it to every subject studied. This page says what the original project was, what the site adds, where each number comes from and how you can check the results yourself.</p>
+
+    <nav class="about-toc card" aria-label="On this page">
+      <p class="about-toc-title">On this page</p>
+      <ol>
+        <li><a href="#project">What the project is</a></li>
+        <li><a href="#scope">In scope and out of scope</a></li>
+        <li><a href="#parameters">Where every parameter comes from</a></li>
+        <li><a href="#reproduction">How the site reproduces the project</a></li>
+        <li><a href="#labels">Evidence labels explained</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+        <li><a href="#licences">Credits and licences</a></li>
+        <li><a href="#run-locally">Running it yourself</a></li>
+      </ol>
+    </nav>
+
+    <!-- ============================================================ 1 -->
+    <section id="project" class="about-section" aria-labelledby="project-title">
+      <h2 id="project-title">What the project is</h2>
+      <div class="prose">
+        <p>The original project is a MATLAB-based nonlinear simulation of a small rigid spacecraft's attitude control. It models reaction wheels with a torque limit and a three-mode safe-mode logic, compares a PID controller with an LQR controller, and produces its verification outputs automatically: response plots, a test matrix, a requirements trace and a Monte Carlo campaign. The results can be watched as a 3D attitude animation, and an interactive interface lets the user change the initial attitude and body rates, the controller, the run duration, safe mode and a fault window, then save the run as a CSV file. An optional Python validation helper re-checks the CSV outputs that the MATLAB workflow writes, and an embedded-style C++ stub sketches the controller as flight code. <span class="tag tag-project" title="Project: stated in the project notes.">Project</span></p>
+        <p>Its main modelling assumptions, as the project states them:</p>
+        <ul>
+          <li>the spacecraft is a rigid body with a diagonal, constant inertia matrix;</li>
+          <li>attitude is propagated with scalar-first quaternions;</li>
+          <li>the reaction wheels are commanded body torques with per-axis saturation;</li>
+          <li>the disturbance torque is bounded and constant within each run;</li>
+          <li>the LQR is designed on a small-angle linearisation near the target, while the simulation uses the full nonlinear quaternion dynamics;</li>
+          <li>the 3D animation is a representative picture of the attitude, not a detailed CAD model.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============================================================ 2 -->
+    <section id="scope" class="about-section" aria-labelledby="scope-title">
+      <h2 id="scope-title">In scope and out of scope</h2>
+      <div class="grid-2">
+        <div class="card scope-card scope-in">
+          <h3>In the original project <span class="tag tag-project" title="Project: stated in the project notes.">Project</span></h3>
+          <ul>
+            <li>Rigid-body dynamics with the gyroscopic coupling term, and quaternion kinematics.</li>
+            <li>Reaction-wheel torque limits on each axis.</li>
+            <li>A quaternion-error PID and an LQR for nominal pointing, rate damping for detumbling and a low-gain hold.</li>
+            <li>The NOMINAL, SAFE_DETUMBLE and SAFE_HOLD mode machine with fault injection.</li>
+            <li>Five requirements, six tests and a 60-trial Monte Carlo campaign.</li>
+            <li>The 3D animation, the interactive interface, the Python validation helper and the C++ stub.</li>
+          </ul>
+        </div>
+        <div class="card scope-card scope-out">
+          <h3>Outside its scope</h3>
+          <ul>
+            <li><strong>Sensors and estimation.</strong> Sensor noise and estimator dynamics were left out of this first project: the controller is fed the true simulated state.</li>
+            <li><strong>Wheel dynamics.</strong> The wheels are torque sources with a limit; their speed and stored momentum are not simulated.</li>
+            <li><strong>Flexibility and changing mass.</strong> The body is rigid and its inertia is constant.</li>
+            <li><strong>Detailed environment models.</strong> One bounded, constant torque per run stands in for drag, gravity gradient, solar pressure and magnetism.</li>
+          </ul>
+        </div>
+      </div>
+      <h3>What this site adds</h3>
+      <ul class="adds prose">
+        <li><span class="tag tag-extension" title="Extension: beyond the original project scope.">Extension</span> Sensors and estimation: a gyro with bias and noise, a star tracker, and complementary and Kalman-style filters, in module 07 and as clearly marked controls in the simulator.</li>
+        <li><span class="tag tag-option" title="Site option: an option offered by this site; the original project did not include it.">Site option</span> An optional fix for a gap in the mode specification: going back from SAFE_HOLD to SAFE_DETUMBLE if the spacecraft is upset again.</li>
+        <li><span class="tag tag-option" title="Site option: an option offered by this site; the original project did not include it.">Site option</span> Direction-preserving torque scaling as an alternative to per-axis clipping, and actuator delay and quantisation for the architecture module.</li>
+        <li><span class="tag tag-option" title="Site option: an option offered by this site; the original project did not include it.">Site option</span> Forward Euler and deliberately broken RK4 variants, so the integration module can show what goes wrong.</li>
+        <li>Interactive widgets in every module, and the map from 70 subjects to the 13 parts of the project.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================ 3 -->
+    <section id="parameters" class="about-section" aria-labelledby="parameters-title">
+      <h2 id="parameters-title">Where every parameter comes from</h2>
+      <div class="prose">
+        <p>Every parameter the engine uses is listed here with its source. The simulator and every module read these same values from one place in the engine, so they cannot drift apart. <span id="param-counts"></span></p>
+      </div>
+      <div id="param-table"></div>
+      <figure class="card worked" aria-labelledby="worked-title">
+        <figcaption id="worked-title" class="worked-title">Worked example: why the 3D model is a 0.212 × 0.173 × 0.274 m box <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span></figcaption>
+        <p>A uniform box of mass \(m\) and edge lengths \(a, b, c\) along x, y and z has principal moments of inertia</p>
+        <div class="eq">\[ \begin{aligned} J_{xx} &= \tfrac{m}{12}\left(b^2 + c^2\right),\\ J_{yy} &= \tfrac{m}{12}\left(a^2 + c^2\right),\\ J_{zz} &= \tfrac{m}{12}\left(a^2 + b^2\right). \end{aligned} \]</div>
+        <p>With \(m = 4\) kg and \(a, b, c = 0.212, 0.173, 0.274\) m, in kg m²:</p>
+        <div class="eq">\[ \begin{aligned} J_{xx} &= \tfrac{4}{12}\,(0.02993 + 0.07508)\\ &= 0.0350,\\[4pt] J_{yy} &= \tfrac{4}{12}\,(0.04494 + 0.07508)\\ &= 0.0400,\\[4pt] J_{zz} &= \tfrac{4}{12}\,(0.04494 + 0.02993)\\ &= 0.0250. \end{aligned} \]</div>
+        <p>That is the project's \(J = \mathrm{diag}(0.035, 0.040, 0.025)\) kg m² to within 0.2% (the edges are rounded to the millimetre), so the box drawn in the simulator has the inertia that the engine simulates. y is the major axis, z the minor axis and x the intermediate one, which is why only a spin about x tumbles.</p>
+      </figure>
+    </section>
+
+    <!-- ============================================================ 4 -->
+    <section id="reproduction" class="about-section" aria-labelledby="reproduction-title">
+      <h2 id="reproduction-title">How the site reproduces the project</h2>
+      <div class="prose">
+        <p>The site's engine re-implements the project's model in JavaScript and runs entirely in your browser: scalar-first quaternions with the Hamilton product, Euler's equation \(J\dot\omega + \omega \times (J\omega) = \tau + \tau_d\), a fixed-step RK4 integrator at 0.01 s <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span> with \(q\) renormalised after every step, per-axis clipping of the torque command, and the three-mode safe-mode machine with integer step counters. Its results are checked against reference values from an independent implementation; you can <a href="tests/browser.html">run those engine tests in your browser</a>.</p>
+        <p>The notes give the control laws but not the gain values, so the PID, detumble and hold gains here are the site's own, and so is the Monte Carlo seed. The sampled trials and the worst case therefore differ from the project's, but both campaigns pass every check:</p>
+      </div>
+
+      <figure class="widget" id="w-mc-compare" aria-labelledby="w-mc-compare-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-mc-compare-title">The Monte Carlo campaign: project against site</h3>
+          <p class="widget-try"><strong>Try:</strong> run the 60 trials again in your browser. <strong>Notice:</strong> read as a claim about the true pass rate at 95% confidence, 60 passes out of 60 give a lower bound only just above 0.95.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="scroll-x" tabindex="0" role="region" aria-label="Monte Carlo results: project against site">
+            <table class="table compare">
+              <caption>Monte Carlo results with safe mode on</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Result</th>
+                  <th scope="col">Project, as reported <span class="tag tag-project" title="Project: stated in the project notes.">Project</span></th>
+                  <th scope="col">This site, seed <span data-mc="seed">42</span> <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">Detumble within 60 s (REQ-L1)</th><td>100%</td><td data-mc="l1">60/60</td></tr>
+                <tr><th scope="row">Final nominal stability</th><td>100%</td><td data-mc="final">60/60</td></tr>
+                <tr><th scope="row">Safety (REQ-S1 and REQ-S2)</th><td>100%</td><td data-mc="safety">60/60</td></tr>
+                <tr><th scope="row">Worst angular-rate norm</th><td>13.22 deg/s</td><td data-mc="worst">12.47 deg/s</td></tr>
+                <tr><th scope="row">One-sided 95% lower bound on the REQ-L1 pass rate</th><td>not reported</td><td data-mc="cp">0.951</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="widget-controls mc-controls">
+            <div class="btn-row" id="mc-actions"></div>
+            <div class="progress-bar" id="mc-progress" role="progressbar" aria-valuemin="0" aria-valuemax="60" aria-valuenow="0" aria-label="Monte Carlo progress" hidden><span></span></div>
+            <p class="status-line" id="mc-status" aria-live="polite">The site column shows the values this engine gives; run it to recompute them here.</p>
+          </div>
+          <div class="prose mc-explain">
+            <p>The bound comes from the Clopper–Pearson interval. With \(s = n\) successes in \(n\) trials, the one-sided 95% lower bound \(p_L\) solves \(p_L^{\,n} = 0.05\):</p>
+            <div class="eq">\[ \begin{aligned} p_L &= 0.05^{1/n}, \\ p_L(60) &= 0.05^{1/60} \approx 0.951. \end{aligned} \]</div>
+            <p>Read literally, REQ-L1 asks that at least 95% of the Monte Carlo trials pass, and 60/60 clearly does. Read as a claim about the true pass rate at 95% confidence, which is the reading <a href="m09-verification.html#confidence">module 09</a> uses, sixty clean trials only just demonstrate it. One failure would drop the bound to about 0.923: 59/60 = 98.3% still meets the letter of REQ-L1, but no longer demonstrates a 95% true rate. <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span> The site's worst rate also has a simple explanation: it equals the initial rate of trial 0, the fastest start in the sample. The controller does spin up 11 slower-starting trials, because the slew from a large attitude error accelerates the craft, but none beyond 6.7 deg/s, so the worst case is set by the fastest sampled start, not by the controller (<a href="m09-verification.html#sampling">module 09</a>). <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span></p>
+          </div>
+        </div>
+        <div class="widget-foot">
+          <p>Uses the same Monte Carlo runner as the simulator: <span data-mc="desc">60 trials, random axis with an angle up to 120°, rates up to 8 deg/s and disturbance up to 2×10⁻⁵ N m per axis</span>.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span><span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span></span>
+        </div>
+      </figure>
+
+      <h3 id="scenarios-title">The reference scenarios, computed now</h3>
+      <div class="prose">
+        <p>Each row below is one run of this page's engine, made when the page loaded. Open any of them in the simulator to watch it.</p>
+      </div>
+      <div id="scenario-table"><p class="status-line" id="scenario-status">Computing the scenarios…</p></div>
+    </section>
+
+    <!-- ============================================================ 5 -->
+    <section id="labels" class="about-section" aria-labelledby="labels-title">
+      <h2 id="labels-title">Evidence labels explained</h2>
+      <div class="prose">
+        <p>Every number and every claim on the site says where it comes from. A number tagged <span class="tag tag-project" title="Project: stated in the project notes.">Project</span> is stated in the project notes; <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span> is computed from those numbers; <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span> is a value this site had to choose because the notes do not give one; <span class="tag tag-option" title="Site option: an option offered by this site; the original project did not include it.">Site option</span> marks a feature this site offers that the original project did not have, switched off by default unless stated; <span class="tag tag-illustrative" title="Illustrative: example hardware numbers, not project data.">Illustrative</span> marks example hardware figures; and <span class="tag tag-extension" title="Extension: beyond the original project scope.">Extension</span> marks anything beyond the original scope.</p>
+        <p>Links between subjects and the project carry two more kinds of label. The <strong>evidence badge</strong> says what the link rests on. <span id="evidence-counts"></span> For a subject known only from its outline, the site describes the <em>typical content of this subject</em> and never claims what it taught. The <strong>strength pill</strong> says how much of a part of the project the subject carries: strong for a method the part uses directly, moderate for a supporting idea, weak for background or a brief connection. <span class="tag tag-analogy" title="Analogy: a teaching bridge rather than course content.">Analogy</span> marks a link that is a teaching bridge between fields rather than shared content.</p>
+      </div>
+      <div id="labels-legend"></div>
+    </section>
+
+    <!-- ============================================================ 6 -->
+    <section id="privacy" class="about-section" aria-labelledby="privacy-title">
+      <h2 id="privacy-title">Privacy</h2>
+      <div class="callout info privacy-statement" role="note">
+        <div class="callout-content">
+          <p>This site contains no personal information. Subjects are named generically; codes, institutions, people and dates are deliberately omitted.</p>
+        </div>
+      </div>
+      <div class="prose">
+        <p>The project is described only as a student ADCS simulation project, its progress log is numbered by iteration from 1 to 6, and every subject appears only by a generic name and its subject matter. The site sets no cookies and sends nothing anywhere: your theme choice and module ticks stay in your own browser's storage.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ 7 -->
+    <section id="licences" class="about-section" aria-labelledby="licences-title">
+      <h2 id="licences-title">Credits and licences</h2>
+      <div class="prose">
+        <p>Two libraries are included, each copied unmodified from its published package so that the site makes no third-party requests and works offline:</p>
+        <ul>
+          <li><strong>three.js r128</strong>, MIT licence: the 3D view in the simulator. <a href="assets/vendor/three-LICENSE.txt">Licence text</a> · <a href="https://github.com/mrdoob/three.js">source code</a></li>
+          <li><strong>KaTeX 0.16.9</strong> and its fonts, MIT licence: the equations. <a href="assets/vendor/katex/LICENSE.txt">Licence text</a> · <a href="https://github.com/KaTeX/KaTeX">source code</a></li>
+        </ul>
+        <p>Everything else, from the simulation engine and the canvas plots to the 2D wireframe and the page scripts, is written for this site with no other dependencies.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ 8 -->
+    <section id="run-locally" class="about-section" aria-labelledby="run-title">
+      <h2 id="run-title">Running it yourself</h2>
+      <div class="prose">
+        <ul>
+          <li><strong>Offline:</strong> open <code>index.html</code> directly in a browser. There is no build step and no server; all data and libraries are local classic scripts.</li>
+          <li><strong>GitHub Pages:</strong> push the folder to a repository and turn Pages on. Every link is relative, so the site works from a project subpath.</li>
+          <li><strong>A local server</strong> is optional: <code>python3 -m http.server</code> in the folder, then open the address it prints.</li>
+          <li><strong>Checks:</strong> <a href="tests/browser.html">tests/browser.html</a> runs the engine tests in the browser, or run <code>node tests/run-node.js</code> from the folder.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

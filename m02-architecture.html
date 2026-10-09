@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 System architecture and modes · Attitude Control: The Big Picture</title>
+<meta name="description" content="Draw the closed loop, see how the mode manager selects one of three control laws, and order one simulation step correctly.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m02.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m02.js"></script>
+</head>
+<body data-page="m02">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 02</span>
+      <h1>System architecture and modes</h1>
+      <p class="module-purpose">Draw the closed loop, see how the mode manager selects one of three control laws, and order one simulation step correctly.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Define</span>
+        <span>About 20 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <section id="loop" aria-labelledby="loop-title">
+      <h2 id="loop-title">The closed loop</h2>
+      <div class="prose">
+        <p>An attitude-control system is a feedback loop: measure where the spacecraft points, compare it with where it should point, and push on the difference. The project’s architecture note lists the loop in six steps <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>:</p>
+        <ol>
+          <li>A <strong>reference attitude</strong> q<sub>ref</sub> is supplied as a scalar-first quaternion.</li>
+          <li>The <strong>controller</strong> computes a commanded body torque with PID, LQR or detumble rate damping.</li>
+          <li>The <strong>actuator model</strong> limits the commanded torque to the reaction-wheel capability.</li>
+          <li>The <strong>rigid-body model</strong> propagates the quaternion attitude and the angular velocity.</li>
+          <li>The <strong>state feedback</strong> returns the simulated state to the controller.</li>
+          <li>The <strong>safe-mode logic</strong> monitors the angular rate and the fault flag, then selects the control mode.</li>
+        </ol>
+        <p>Steps 1 to 5 are the classic loop of a control course; step 6 sits above it and decides <em>which</em> controller runs. With a controller C(s), a plant G(s) and a feedback path H(s), the closed-loop transfer function from reference to output is</p>
+        <div class="eq">\[ T(s) = \frac{C(s)\,G(s)}{1 + C(s)\,G(s)\,H(s)} . \]</div>
+        <p>Read it as the loop’s promise. Where the loop gain CGH is large, T ≈ 1/H, so the output follows the reference whatever the plant does; where it is small, the plant is on its own. In this project H = 1, because the true state is fed back. Two features keep the spacecraft loop from being a textbook one: the actuator saturates at ±3 mN m, so the loop is linear only for small errors, and the mode manager swaps C(s) at run time, which makes it a <strong>switched controller</strong>. Transfer functions are used here only as a way of reading the loop; the simulation itself works directly with the nonlinear equations.</p>
+        <p>Closed-loop block diagrams, block-diagram reduction and T(s) are typical content of a control systems subject. Drone flight controllers and their failsafes (return to home on link loss or low battery) are typical content of a remotely piloted aircraft systems subject, and they show the same pattern in another vehicle: a feedback loop for the attitude, plus a failsafe mode machine that takes over when something goes wrong.</p>
+      </div>
+    </section>
+
+    <section id="blocks" aria-labelledby="blocks-title">
+      <h2 id="blocks-title">Block by block</h2>
+      <div class="prose">
+        <p>A block diagram is only useful if every wire has a name, a unit and a meaning. These are the signals of this loop:</p>
+      </div>
+      <div class="scroll-x" tabindex="0" role="region" aria-label="Signals of the attitude-control loop">
+        <table class="table">
+          <caption>Signals on the wires</caption>
+          <thead><tr><th scope="col">Signal</th><th scope="col">Meaning</th><th scope="col">Unit and size</th><th scope="col">From → to</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">q<sub>ref</sub></th><td>Target attitude</td><td>unit quaternion (4 numbers); here [1, 0, 0, 0], the inertial frame <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span></td><td>reference → error</td></tr>
+            <tr><th scope="row">q<sub>e</sub></th><td>Error quaternion, \(q_e = q_{ref}^* \otimes q\); shown as the error angle θ<sub>e</sub></td><td>unit quaternion; θ<sub>e</sub> in deg</td><td>error → controller, mode manager</td></tr>
+            <tr><th scope="row">τ<sub>cmd</sub></th><td>Commanded body torque</td><td>N m, 3 axes (shown in mN m)</td><td>controller → saturation</td></tr>
+            <tr><th scope="row">τ</th><td>Applied torque after the per-axis limit</td><td>N m, 3 axes, \(|\tau_i| \le 0.003\)</td><td>saturation → dynamics</td></tr>
+            <tr><th scope="row">ω</th><td>Body angular velocity</td><td>rad/s, 3 axes (shown as |ω| in deg/s)</td><td>dynamics → feedback</td></tr>
+            <tr><th scope="row">q</th><td>Attitude, body to inertial</td><td>unit quaternion</td><td>dynamics → feedback</td></tr>
+            <tr><th scope="row">mode</th><td>NOMINAL, SAFE_DETUMBLE or SAFE_HOLD</td><td>one of three states</td><td>mode manager → controller</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>Electromechanics notes give this vocabulary for any closed loop: setpoint, comparator, controller, actuator, plant, sensor and feedback path, with the error defined as setpoint minus measured value. They also show that the comparator, the summer and the difference amplifier exist as hardware blocks, built from op-amps; in this spacecraft they are lines of code. Breaking a product into functions (sense the state, decide the mode, compute the torque, limit it, propagate the dynamics) is the functional decomposition that is typical content of a mechanical engineering design subject.</p>
+        <p>The widget runs preset T03 once. The project’s test plan describes T03 as a safe-mode upset with a high initial rate and a temporary fault <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>; this site picks the numbers, body rates of 8, −6 and 5 deg/s and a fault from 45 to 60 s <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span>. Scrub through it and watch each wire.</p>
+      </div>
+
+      <figure class="widget" id="w-probes" aria-labelledby="w-probes-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-probes-title">Live block diagram with signal probes</h3>
+          <p class="widget-try"><strong>Try:</strong> drag the time to 0.5 s, then to 30 s and 50 s. <strong>Notice:</strong> early on the commands exceed ±3 mN m and the saturation block clips them (SAT); the highlighted law changes each time the mode does, while the other blocks stay the same.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls" id="probe-controls"></div>
+          <div class="widget-output" id="probe-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>One engine run of preset T03 (dt 0.01 s, 120 s). Values are the logged signals at the chosen time.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span> <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <section id="modes" aria-labelledby="modes-title">
+      <h2 id="modes-title">Three modes, three controllers</h2>
+      <div class="prose">
+        <p>The project runs three modes, each with its own purpose and its own control law <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>:</p>
+      </div>
+      <div class="scroll-x" tabindex="0" role="region" aria-label="Mode architecture table">
+        <table class="table">
+          <caption>Modes and control laws</caption>
+          <thead><tr><th scope="col">Mode</th><th scope="col">Purpose</th><th scope="col">Controller used</th><th scope="col">Torque law</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><dfn data-term="nominal">NOMINAL</dfn></th><td>Track the target attitude.</td><td>PID or LQR</td><td>\(\tau = -K_p q_{e,v} - K_d\,\omega - K_i \textstyle\int q_{e,v}\,dt\)</td></tr>
+            <tr><th scope="row"><dfn data-term="safe-detumble">SAFE_DETUMBLE</dfn></th><td>Remove excessive angular rate.</td><td>Rate damping</td><td>\(\tau = -K_d\,\omega\)</td></tr>
+            <tr><th scope="row"><dfn data-term="safe-hold">SAFE_HOLD</dfn></th><td>Keep a coarse, stable attitude after detumbling.</td><td>Low-gain PD hold</td><td>\(\tau = -K_p q_{e,v} - K_d\,\omega\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>The important architectural point is what the supervisor does <em>not</em> do. The mode manager never computes a torque. It reads |ω|, the error angle and the fault flag, applies its guards and outputs one thing: which law runs this step. The laws themselves stay simple and separately testable. The sequence is NOMINAL → SAFE_DETUMBLE → SAFE_HOLD → NOMINAL, with <dfn data-term="hysteresis">hysteresis</dfn> (enter above 6 deg/s, leave only after 2 s below 0.5 deg/s) and a minimum <dfn data-term="dwell-time">dwell time</dfn> of 8 s in SAFE_HOLD, so the modes cannot flap when the rate hovers near a threshold. Two transitions are forbidden outright, SAFE_DETUMBLE → NOMINAL and NOMINAL → SAFE_HOLD, and returning to NOMINAL while the fault is active is forbidden too. <a href="m08-safe-mode.html">Module 08</a> proves these properties.</p>
+        <div class="eq">\[ \tau_k = \kappa_{m_k}(q_{e,k},\,\omega_k), \qquad m_k \in \{\mathrm{N},\ \mathrm{SD},\ \mathrm{SH}\} \]</div>
+        <p>Several subjects describe the same object in their own language. As a set of modes with an allowed-transition relation it is a directed graph, typical content of a discrete structures subject; with its timers it becomes an extended state machine. As a finite automaton δ(state, input), typical content of a theory of computing subject, filling in the whole δ table forces a decision for every pair. Moore machines built from a state register, next-state logic and counters are typical content of a computer and network architecture subject; in hardware this one needs a 2-bit state register. The object-oriented programming notes teach encapsulation (private and protected members behind getters and setters) and has-a aggregation in class diagrams; applied here, a ModeManager class that keeps its timers private and holds one controller object per mode makes the forbidden transitions impossible by construction. Checklists for each phase of flight, typical content of a flight procedures subject, are the pilot’s version: an ordered sequence of states with explicit entry and exit criteria.</p>
+      </div>
+
+      <figure class="widget" id="w-modecards" aria-labelledby="w-modecards-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-modecards-title">Mode cards</h3>
+          <p class="widget-try"><strong>Try:</strong> turn each card over to see how the mode is entered and left. <strong>Notice:</strong> every guard is a measurable threshold from the safe-mode specification, and each mode has exactly one way out.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-output" id="modecards-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Thresholds are read from the site’s parameter file, which copies the project’s safe-mode specification.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span> <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <section id="dataflow" aria-labelledby="dataflow-title">
+      <h2 id="dataflow-title">One time step as a DAG</h2>
+      <div class="prose">
+        <p>On the diagram the loop is a cycle: the controller needs the state, and the state depends on the controller. A program cannot run a cycle, so the simulation breaks it in time. Every step k does the same work in a fixed order:</p>
+        <div class="eq">\[ \underbrace{x_k}_{\text{read}} \to \underbrace{q_{e,k},\ |\omega_k|}_{\text{errors}} \to \underbrace{m_k}_{\text{mode logic}} \to \underbrace{\tau_{cmd,k}}_{\text{controller}} \to \underbrace{\tau_k}_{\text{saturation}} \to \text{log} \to \underbrace{x_{k+1} = \Phi(x_k, \tau_k)}_{\text{RK4, then renormalise } q} \]</div>
+        <p>followed by the integrator update for the PID term. Inside one step the dependencies form a <strong>directed acyclic graph</strong> (DAG), and the order above is its topological order. The cycle of the physical loop is broken by the <strong>one-step delay</strong>: the state computed at step k is only read at step k + 1. In a block-diagram tool that delay is the integrator; when it is missing, the tool reports an <strong>algebraic loop</strong>, which is exactly a cycle inside one step’s graph.</p>
+        <p>Order mistakes are quiet. Running the mode logic after the RK4 step, for example, makes it decide on x<sub>k+1</sub> while the controller used x<sub>k</sub>: an off-by-one-step bug that shifts every transition by 0.01 s and pairs the wrong samples in the log. Nothing crashes, and the plots look almost right.</p>
+        <p>Each of these ideas starts from something a subject teaches. Computing algorithms notes define directed acyclic graphs and name scheduling and dependency resolution among their uses; applied here, one step’s dataflow is such a graph, and running a node before its inputs are ready is the off-by-one-step bug above. Data structures notes teach topological sort and Kahn’s algorithm, which either produces an order or proves that none exists because the graph has a cycle; here the one-step delay breaks the feedback cycle, and an algebraic loop would be a cycle inside one step’s graph that Kahn’s algorithm reports. Machine-elements notes size a drive in sequence, from transmitted power and speed to gear geometry, tooth forces, shaft loads and bearing loads: the same kind of dependency graph.</p>
+      </div>
+
+      <figure class="widget" id="w-order" aria-labelledby="w-order-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-order-title">Execution-order puzzle</h3>
+          <p class="widget-try"><strong>Try:</strong> press Check on the starting order first, then fix it with the arrow buttons. <strong>Notice:</strong> the starting order runs the mode logic after the RK4 step, the classic off-by-one-step bug.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-output" id="order-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>The order is the one the site’s engine runs in every step. Use the ↑ and ↓ buttons, or focus a card and press Alt with an arrow key.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span> <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <section id="interfaces" aria-labelledby="interfaces-title">
+      <h2 id="interfaces-title">Interfaces and layering</h2>
+      <div class="prose">
+        <p>An interface is a promise between two blocks. The controller’s promise is short: <strong>given the error and the rate, return a body torque in N m for each axis.</strong> It says nothing about wheels, motors or drivers. As long as every actuator layer accepts “body torque in N m per axis”, the layer can be replaced without changing a line of controller code.</p>
+        <p>That is how flight software is tested in stages. In <dfn data-term="sil-hil">software-in-the-loop</dfn> (SIL) the controller drives a simulated wheel; in processor-in-the-loop (PIL) it runs on the flight processor against an emulator; in hardware-in-the-loop (HIL) it commands real wheel electronics. Each stage replaces one layer with another that keeps the same contract. What changes is the response: a real driver adds latency, and a digital driver can only command torque in steps (quantisation).</p>
+        <div class="eq">\[ \tau_k = \mathrm{sat}\big(Q_\Delta(\tau_{cmd,\,k-d})\big), \qquad d = \text{delay in steps}, \quad Q_\Delta(x) = \Delta\,\mathrm{round}(x/\Delta) \]</div>
+        <p>Software engineering notes teach dependency inversion (depend on abstractions), the open/closed principle (add a case without editing old code) and the point that composition couples to an interface while inheritance couples to an implementation. Applied here, the controller is a strategy behind an abstract interface, so the loop and the mode manager depend only on the abstraction, and adding a law edits nothing that exists. A spacecraft object <em>has a</em> dynamics model, an actuator, a controller and a mode manager, and swapping the actuator is a composition change, not a new subclass. Networking notes teach that a layer can be replaced by anything that keeps its contract, and the layers above cannot tell; applied here, that is the route from SIL to HIL. Assembly mates in CAD, which constrain how parts may move relative to each other, are a mechanical picture of the same idea and are typical content of a digital design and modelling subject.</p>
+      </div>
+
+      <figure class="widget" id="w-layer" aria-labelledby="w-layer-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-layer-title">Swap the layer</h3>
+          <p class="widget-try"><strong>Try:</strong> switch between the three layers, then look at the start and the end of the torque plot. <strong>Notice:</strong> the controller code never changes; latency delays the first torque and quantisation leaves a small residual error and a chattering torque at the end.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls" id="layer-controls"></div>
+          <div class="widget-output" id="layer-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Preset T01 (PID, safe mode off) run three times by the engine, once per actuator layer. Delay and quantum are site options for this widget.</p>
+          <span class="tags"><span class="tag tag-option" title="Site option: an option offered by this site; the original project did not include it.">Site option</span> <span class="tag tag-illustrative" title="Illustrative: example hardware numbers, not project data.">Illustrative</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <section id="agent" aria-labelledby="agent-title">
+      <h2 id="agent-title">One specification, several programs</h2>
+      <div class="prose">
+        <p>Intelligent Systems notes separate an <strong>agent function</strong>, the specification of what an agent should do for every history of percepts, from an <strong>agent program</strong>, the code that implements it. They define an agent as anything that perceives its environment through sensors and acts on it through actuators; drawn as a loop (sensors → program → actuators → environment), that is this module’s block diagram. The notes add a warning that applies here: the state representation caps what the agent can do, because anything not in the state is invisible to every algorithm that runs on it.</p>
+        <p>For the attitude controller, the agent function is the set of control laws plus the mode-transition table. Three programs realise it: the MATLAB simulation, the C++ controller stub (for the controller part) and this site’s engine. A fourth, the Python helper, does not realise it at all; it checks the MATLAB outputs.</p>
+      </div>
+      <div class="scroll-x" tabindex="0" role="region" aria-label="Implementations of the one specification">
+        <table class="table">
+          <caption>One specification, three programs and a checker</caption>
+          <thead><tr><th scope="col">Program</th><th scope="col">Role</th><th scope="col">Source</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">MATLAB simulation</th><td>Implements it: the project’s main implementation, with nonlinear dynamics, controllers, safe-mode logic, Monte Carlo and the interactive interface.</td><td><span class="tag tag-project" title="Project: stated in the project notes.">Project</span></td></tr>
+            <tr><th scope="row">C++ controller stub</th><td>Implements the controller part: an embedded-style version of the control laws (<a href="m10-software.html">module 10</a>).</td><td><span class="tag tag-project" title="Project: stated in the project notes.">Project</span></td></tr>
+            <tr><th scope="row">This site’s JavaScript engine</th><td>Implements it: re-implements the dynamics, laws and mode logic in the browser; its reference numbers were cross-checked against an independent implementation.</td><td>This site</td></tr>
+            <tr><th scope="row">Python validation helper</th><td>Checks, does not implement: it reads the CSV outputs already written by the MATLAB workflow.</td><td><span class="tag tag-project" title="Project: stated in the project notes.">Project</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>Cross-checking programs that implement one function is <strong>equivalence testing</strong>: run them on the same inputs and compare the outputs. It applies to the three implementations, not to the Python helper, which checks one implementation’s outputs instead of computing its own. Agreement does not prove the specification right, but disagreement proves that at least one program is wrong. It also explains why this site states its own values next to the project’s: where the two differ (for example the integrator clamp described in <a href="m05-control.html">module 05</a>), the site says so instead of hiding it.</p>
+      </div>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <div class="prose in-short">
+      <h2 id="in-short-title">In short</h2>
+      <p>The loop is reference → error → controller → saturation → dynamics → feedback, with a mode manager above it that chooses one of three laws but never computes torque. A simulation runs the loop one step at a time in a fixed topological order, and the one-step delay is what turns the physical cycle into a DAG. Because the controller’s contract is “body torque in N m per axis”, the actuator layer can be swapped from simulation to hardware without touching controller code; only the response changes.</p>
+    </div>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

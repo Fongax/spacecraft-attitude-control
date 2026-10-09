@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{NN}} {{MODULE_TITLE}} · Attitude Control: The Big Picture</title>
+<meta name="description" content="{{MODULE_SUMMARY}}">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<!-- Optional: scoped under body[data-page="{{MODULE_ID}}"]. Delete the line if the module needs no page CSS. -->
+<link rel="stylesheet" href="assets/css/pages/{{MODULE_ID}}.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/{{MODULE_ID}}.js"></script>
+</head>
+<body data-page="{{MODULE_ID}}">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <!-- Breadcrumb ("Learn › NN Title") and the 13-dot module strip are injected here by mountChrome. -->
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <!-- 1. Hero -->
+    <header class="module-hero">
+      <span class="module-num">MODULE {{NN}}</span>
+      <h1>{{MODULE_TITLE}}</h1>
+      <p class="module-purpose">{{ONE_LINE_PURPOSE}}</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: {{PHASE}}</span>
+        <span>About {{MINUTES}} min</span>
+      </p>
+      <!-- mountChrome adds "Fed by N subjects from M disciplines" (div.module-fed, from ADCS.data) here,
+           or fills an empty <div data-auto="fed"></div> placed wherever the page prefers. -->
+      <!-- m07 only: the out-of-scope banner.
+      <div class="callout ext" role="note">
+        <div class="callout-content">
+          <p class="callout-title">Beyond the original project scope <span class="tag tag-extension">Extension</span></p>
+          <p>The original project fed back the true simulated state. Sensors and estimation are a natural extension.</p>
+        </div>
+      </div>
+      -->
+      <!-- Left empty, this paragraph is filled from ADCS.data.modules[i].prereqs. -->
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <!-- 2. Objectives: left empty, the list is filled from ADCS.data.modules[i].objectives. -->
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- 3. Content sections: one per anchor in plan §3, in order. Copy this block for each. -->
+    <section id="{{ANCHOR}}" aria-labelledby="{{ANCHOR}}-title">
+      <h2 id="{{ANCHOR}}-title">{{SECTION_TITLE}}</h2>
+      <div class="prose">
+        <p>{{PROSE_150_TO_400_WORDS}} Wrap the first use of a glossary term in <dfn data-term="{{TERM_ID}}">{{TERM}}</dfn>.</p>
+        <div class="eq">\[ {{DISPLAY_EQUATION}} \]</div>
+        <p>Every number carries its honesty tag: 0.003 N m <span class="tag tag-project">Project</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-{{WIDGET_ID}}" aria-labelledby="w-{{WIDGET_ID}}-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-{{WIDGET_ID}}-title">{{WIDGET_TITLE}}</h3>
+          <p class="widget-try"><strong>Try:</strong> {{WHAT_TO_TRY}} <strong>Notice:</strong> {{WHAT_TO_NOTICE}}</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"><!-- ADCS.ui.slider / toggle / segmented go here --></div>
+          <div class="widget-output"><!-- ADCS.plot.* / ADCS.wire.create / readouts go here --></div>
+        </div>
+        <div class="widget-foot">
+          <p>{{NOTES}}</p>
+          <span class="tags"><span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- 4. Simulator links: left empty, the list is filled from ADCS.data.modules[i].simLinks. -->
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <!-- 5. Quiz: three predict-then-reveal items, rendered by ADCS.ui.quiz into #quiz. -->
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <!-- 6. "Where this came from": rendered by ADCS.ui.renderProvenance(el, '{{MODULE_ID}}').
+         An optional "In short" paragraph may go just above this section. -->
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <!-- 7. Pager: left empty, filled with the previous and next module by mountChrome, which also puts a
+         "Mark this module as read" switch (div.module-read, localStorage 'adcs-read') just before it. -->
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+
+<!--
+  Module script pattern (assets/js/pages/{{MODULE_ID}}.js):
+
+  (function () { 'use strict';
+    const ui = ADCS.ui;
+    ADCS.ui.ready(function () {
+      ui.mountChrome({ page: '{{MODULE_ID}}' });
+
+      // Widgets: read every number from ADCS.params / ADCS.presets / ADCS.data, catch RangeError inline.
+      const body = document.querySelector('#w-{{WIDGET_ID}} .widget-body');
+      const out = body.querySelector('.widget-output');
+      const kd = ui.slider({ id: 'kd', label: 'Kd', min: 0, max: 0.2, step: 0.001, value: 0.05, unit: 'N m s', tag: 'site' });
+      body.querySelector('.widget-controls').appendChild(kd.el);
+      const p = ADCS.plot.line(out, { title: '|ω| (deg/s)', yLabel: '|ω| (deg/s)', series: [{ id: 'w', label: '|ω|', color: '--accent' }] });
+      function run() {
+        try {
+          ui.clearError(out);
+          const r = ADCS.sim.run({ detumble: { Kd: kd.value } });
+          p.set('w', r.t, r.rateDeg);
+        } catch (err) {
+          if (err instanceof RangeError) ui.showError(out, err); else throw err;
+        }
+      }
+      kd.on('change', ui.debounce(run, 150));
+      run();
+
+      ui.quiz(document.getElementById('quiz'), [
+        { q: '…?', options: ['right answer', 'distractor', 'distractor'], correct: 0, explain: '…' }
+      ]);
+      ui.renderProvenance(document.getElementById('provenance'), '{{MODULE_ID}}');
+      ui.typeset(document.body);
+      ui.linkTerms(document.body);
+    });
+  })();
+
+  Kitchen sink with every component: tests/components.html.
+-->
+</body>
+</html>

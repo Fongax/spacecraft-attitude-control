@@ -1,0 +1,414 @@
+/*
+ * landing.css: the "Big picture" page (index.html). Every rule is scoped under
+ * body[data-page="index"]; shared components are used as they are.
+ */
+
+body[data-page="index"] main { padding-block-start: 0; }
+body[data-page="index"] .landing-section { margin-block-start: var(--s7); }
+body[data-page="index"] .landing-section > h2 { margin-block-start: 0; }
+
+/* ================================================================ hero */
+body[data-page="index"] .hero {
+  padding-block: var(--s6) var(--s5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  --scroll-bg: var(--surface);
+}
+body[data-page="index"] .hero-grid {
+  display: grid;
+  gap: var(--s5) var(--s6);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+@media (min-width: 900px) {
+  body[data-page="index"] .hero-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
+  body[data-page="index"] .hero { padding-block: var(--s7) var(--s6); }
+}
+body[data-page="index"] .hero-kicker {
+  margin: 0 0 var(--s2);
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+body[data-page="index"] .hero h1 {
+  font-size: clamp(2.1rem, 1.3rem + 3.4vw, 3.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin-block: 0 var(--s4);
+}
+body[data-page="index"] .hero .lede { max-width: 58ch; }
+body[data-page="index"] .hero-actions { margin-block-start: var(--s5); }
+body[data-page="index"] .hero-figure { margin: 0; min-width: 0; }
+body[data-page="index"] .hero-wire { position: relative; }
+body[data-page="index"] .hero-hud {
+  position: absolute;
+  left: var(--s2);
+  top: var(--s2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  max-width: calc(100% - 2 * var(--s2));
+  padding: 2px var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--r1);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+body[data-page="index"] .hero-hud .mode-pill { font-size: var(--fs-xs); }
+body[data-page="index"] .hero-timeline {
+  position: relative;
+  display: flex;
+  height: 20px;
+  margin-block-start: var(--s2);
+  border-radius: 4px;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+}
+body[data-page="index"] .hero-seg { flex: 0 1 0; display: block; min-width: 0; text-align: center; color: var(--mode-contrast); overflow: hidden; }
+body[data-page="index"] .hero-seg.n { background: var(--mode-n); }
+body[data-page="index"] .hero-seg.sd { background: var(--mode-sd); }
+body[data-page="index"] .hero-seg.sh { background: var(--mode-sh); }
+body[data-page="index"] .hero-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  margin-inline-start: -1px;
+  background: var(--text);
+  box-shadow: 0 0 0 1px var(--surface);
+}
+body[data-page="index"] .hero-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  margin-block-start: var(--s3);
+}
+body[data-page="index"] .hero-btn-icon { display: inline-flex; }
+body[data-page="index"] .hero-btn-icon svg { width: 16px; height: 16px; }
+body[data-page="index"] .hero-caption { margin-block-start: var(--s2); font-size: var(--fs-sm); color: var(--text-2); }
+body[data-page="index"] .hero-facts { margin: var(--s1) 0 0; }
+
+/* ================================================================ loop: layout */
+body[data-page="index"] .loop-layout { display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); }
+body[data-page="index"] .loop-stage { min-width: 0; }
+body[data-page="index"] .loop-svg-wrap {
+  padding: var(--s2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+}
+/* Side panel from 1100px; below that it is a bottom sheet, so the diagram keeps the full widget width
+   and its text stays legible (a side panel at 900–1099px would squeeze the SVG to about 500–670px). */
+@media (min-width: 1100px) {
+  body[data-page="index"] .loop-layout { grid-template-columns: minmax(0, 1fr) clamp(290px, 31%, 380px); align-items: start; }
+}
+
+/* ================================================================ loop: svg */
+body[data-page="index"] .loop-svg { display: block; width: 100%; height: auto; font-family: var(--font-sans); overflow: visible; }
+body[data-page="index"] .loop-block { cursor: pointer; outline: none; }
+body[data-page="index"] .loop-block:focus { outline: none; }
+body[data-page="index"] .block-shape {
+  fill: var(--surface);
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+  transition: fill 0.15s, stroke 0.15s, opacity 0.2s;
+}
+body[data-page="index"] .loop-block.role-defines-the-loop .block-shape,
+body[data-page="index"] .loop-block.role-around-the-loop .block-shape { fill: var(--bg); }
+body[data-page="index"] .loop-block[data-block="modes"] .block-shape { stroke: var(--line-thr); stroke-width: 2; }
+body[data-page="index"] .loop-block.is-ext .block-shape { fill: var(--ext-bg); stroke: var(--ext); }
+body[data-page="index"] .loop-block.is-dashed .block-shape { stroke-dasharray: 7 5; }
+body[data-page="index"] .loop-block.is-hot .block-shape { stroke: var(--accent); }
+body[data-page="index"] .loop-block.is-selected .block-shape { stroke: var(--accent); stroke-width: 3; fill: var(--accent-soft); }
+body[data-page="index"] .focus-ring { fill: none; stroke: transparent; stroke-width: 2.5; }
+body[data-page="index"] .loop-block:focus-visible .focus-ring { stroke: var(--focus); }
+/* Lens dimming (§1.3.1, opacity 0.25) fades the shape only: the label and subtitle keep AA contrast. */
+body[data-page="index"] .loop-block.is-dim:not(.is-selected) .block-shape { opacity: 0.25; }
+body[data-page="index"] .loop-block.is-dim:not(.is-selected) .block-label { fill: var(--text-2); font-weight: 500; }
+body[data-page="index"] .loop-edges .edge { transition: opacity 0.2s; }
+body[data-page="index"] .loop-edges .edge.is-dim { opacity: 0.25; }
+body[data-page="index"] .block-label { fill: var(--text); font-weight: 650; }
+body[data-page="index"] .block-sub { fill: var(--text-2); }
+body[data-page="index"] .loop-block[data-block="err"] .block-sub { fill: var(--text); font-weight: 650; }
+body[data-page="index"] .ext-tab rect { fill: var(--tag-extension-bg); stroke: var(--ext); stroke-width: 1; }
+body[data-page="index"] .ext-tab text { fill: var(--tag-extension-fg); font-weight: 650; }
+body[data-page="index"] .lens-badge circle { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+body[data-page="index"] .lens-badge text { fill: var(--accent-contrast); font-weight: 700; font-family: var(--font-mono); }
+
+body[data-page="index"] .edge-line { fill: none; stroke: var(--text-2); stroke-width: 2; }
+body[data-page="index"] .edge.style-dashed .edge-line { stroke-dasharray: 7 5; }
+body[data-page="index"] .edge.style-dotted .edge-line { stroke-dasharray: 0.5 5; stroke-linecap: round; stroke-width: 2.6; }
+body[data-page="index"] .edge.is-ext .edge-line { stroke: var(--ext); }
+body[data-page="index"] .edge.kind-supervisory .edge-line { stroke: var(--line-thr); stroke-width: 1.8; }
+body[data-page="index"] .edge.kind-trace .edge-line { stroke: var(--border-strong); stroke-width: 1.5; stroke-dasharray: 5 5; }
+body[data-page="index"] .loop-edges .edge.is-hot .edge-line { stroke: var(--accent); stroke-width: 2.8; }
+body[data-page="index"] .marker-sig { fill: var(--text-2); }
+body[data-page="index"] .marker-ext { fill: var(--ext); }
+body[data-page="index"] .marker-sup { fill: var(--line-thr); }
+body[data-page="index"] .marker-trace { fill: var(--border-strong); }
+body[data-page="index"] .marker-hot { fill: var(--accent); }
+body[data-page="index"] .edge-flow {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 18;
+  opacity: 0.8;
+  animation: landing-flow 1.4s linear infinite;
+  pointer-events: none;
+}
+body[data-page="index"] .edge.is-ext .edge-flow { stroke: var(--ext); }
+body[data-page="index"] .flow-paused .edge-flow { animation-play-state: paused; }
+@keyframes landing-flow { to { stroke-dashoffset: -18.1; } }
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="index"] .edge-flow { display: none; }
+}
+body[data-page="index"] .edge-label {
+  fill: var(--text-2);
+  font-style: italic;
+  paint-order: stroke;
+  stroke: var(--surface-2);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+body[data-page="index"] .edge-sign { fill: var(--text); font-weight: 700; }
+body[data-page="index"] .group-sw {
+  fill: var(--d-sw);
+  fill-opacity: 0;
+  stroke: var(--d-sw);
+  stroke-opacity: 0.75;
+  stroke-width: 1.4;
+  stroke-dasharray: 6 5;
+  transition: fill-opacity 0.15s, opacity 0.2s;
+}
+body[data-page="index"] .group-sw.is-hot { fill-opacity: 0.1; stroke-opacity: 1; stroke-width: 2.2; }
+body[data-page="index"] .group-sw.is-dim { opacity: 0.3; }
+body[data-page="index"] .group-sw-link { fill: none; stroke: var(--d-sw); stroke-width: 1.4; stroke-dasharray: 4 4; }
+body[data-page="index"] .group-ver-line { fill: none; stroke: var(--border-strong); stroke-width: 1.4; stroke-dasharray: 5 5; }
+body[data-page="index"] .group-ver.is-hot .group-ver-line { stroke: var(--accent); stroke-width: 2.2; }
+body[data-page="index"] .group-label { fill: var(--text-2); font-style: italic; }
+
+/* ================================================================ loop: legend */
+body[data-page="index"] .loop-legend {
+  list-style: none;
+  margin: var(--s3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+body[data-page="index"] .loop-legend li { display: inline-flex; align-items: center; gap: var(--s2); margin: 0; }
+body[data-page="index"] .legend-swatch { flex: none; overflow: visible; }
+
+/* ================================================================ loop: list view (below 640px) */
+body[data-page="index"] .loop-list { display: none; flex-direction: column; }
+@media (max-width: 639px) {
+  body[data-page="index"] .loop-svg-wrap, body[data-page="index"] .loop-legend { display: none; }
+  body[data-page="index"] .loop-list { display: flex; }
+}
+body[data-page="index"] .loop-list-head {
+  margin: var(--s4) 0 var(--s2);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+body[data-page="index"] .loop-list-head:first-child { margin-block-start: 0; }
+body[data-page="index"] .loop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 48px;
+  margin: 0 0 var(--s2);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r2);
+  background: var(--surface);
+  color: var(--text);
+  text-align: start;
+}
+body[data-page="index"] .loop-item:has(+ .loop-sep) { margin-block-end: 0; }
+@media (max-width: 639px) { body[data-page="index"] .loop-flow-btn { display: none; } }
+body[data-page="index"] .loop-item:hover { border-color: var(--accent); }
+body[data-page="index"] .loop-item.is-ext { border-style: dashed; border-color: var(--ext); background: var(--ext-bg); --scroll-bg: var(--ext-bg); }
+body[data-page="index"] .loop-item[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
+/* Out of the lens: dashed outline and page background instead of opacity, so the text keeps AA contrast. */
+body[data-page="index"] .loop-item.is-dim:not([aria-pressed="true"]) { background: var(--bg); border-style: dashed; border-color: var(--border-strong); box-shadow: none; --scroll-bg: var(--bg); }
+body[data-page="index"] .loop-item.is-dim .loop-item-label { font-weight: 500; }
+body[data-page="index"] .loop-item-text { display: flex; flex-direction: column; min-width: 0; }
+body[data-page="index"] .loop-item-label { font-weight: 650; }
+body[data-page="index"] .loop-item-sub { font-size: var(--fs-sm); color: var(--text-2); }
+body[data-page="index"] .loop-item-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none; font-size: var(--fs-xs); color: var(--text-2); text-align: end; }
+body[data-page="index"] .loop-item-badge { padding: 0 0.5em; border-radius: 999px; background: var(--accent); color: var(--accent-contrast); font-weight: 700; }
+body[data-page="index"] .loop-back { border-style: dotted; background: var(--bg); }
+body[data-page="index"] .loop-sep { margin: 0; padding: 2px 0 2px var(--s4); font-size: var(--fs-sm); color: var(--text-2); }
+
+/* ================================================================ loop: panel (side panel, bottom sheet below 1100px) */
+body[data-page="index"] .loop-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  --scroll-bg: var(--surface);
+}
+body[data-page="index"] .lp-scroll { min-height: 0; overflow-y: auto; padding: var(--s4); overscroll-behavior: contain; }
+@media (min-width: 1100px) {
+  body[data-page="index"] .loop-panel { position: sticky; top: var(--s3); max-height: calc(100vh - 2 * var(--s3)); }
+}
+@media (max-width: 1099px) {
+  body[data-page="index"] .loop-panel {
+    position: fixed;
+    /* full width on phones; centred and at most 760px wide on tablets, so lines stay readable */
+    left: max(0px, calc(50% - 380px));
+    right: max(0px, calc(50% - 380px));
+    bottom: 0;
+    z-index: 60;
+    max-height: 72vh;
+    border-radius: var(--r3) var(--r3) 0 0;
+    border-bottom: 0;
+    box-shadow: var(--shadow-pop);
+    animation: landing-sheet 0.2s ease-out;
+  }
+  body[data-page="index"] .loop-panel::before {
+    content: "";
+    display: block;
+    flex: none;
+    width: 44px;
+    height: 4px;
+    margin: var(--s2) auto 0;
+    border-radius: 2px;
+    background: var(--border-strong);
+  }
+  body[data-page="index"] .lp-scroll { padding: var(--s2) var(--gutter) calc(var(--s4) + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 1099px) { body[data-page="index"].lp-sheet-open main { padding-block-end: 72vh; } }
+@keyframes landing-sheet { from { transform: translateY(24px); opacity: 0.4; } to { transform: none; opacity: 1; } }
+/* The close button sits over the scrolling text, so it gets an opaque background and its own layer. */
+body[data-page="index"] .lp-close { position: absolute; top: var(--s2); right: var(--s2); z-index: 1; background: var(--surface); }
+body[data-page="index"] .lp-head { padding-inline-end: 44px; }
+body[data-page="index"] .lp-kicker { margin: 0; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-2); }
+body[data-page="index"] .lp-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: var(--s1) 0 0; font-size: var(--fs-lg); }
+body[data-page="index"] .lp-sub { margin: var(--s1) 0 0; color: var(--text-2); font-size: var(--fs-sm); }
+body[data-page="index"] .lp-count { margin: var(--s2) 0 var(--s3); font-weight: 650; font-size: var(--fs-sm); }
+body[data-page="index"] .lp-desc { font-size: var(--fs-sm); }
+body[data-page="index"] .lp-eq { margin-block: 0 var(--s3); font-size: 0.92em; }
+/* Long relations are stacked one per line (stackEquation in landing.js); this keeps each line inside the panel. */
+body[data-page="index"] .lp-eq .katex-display { font-size: 0.88em; }
+body[data-page="index"] .lp-links { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s1); margin-block-end: var(--s3); }
+body[data-page="index"] .lp-learn { display: inline-block; padding-block: 0.45em; font-weight: 650; }
+body[data-page="index"] .lp-learn svg { display: inline-block; width: 16px; height: 16px; margin-inline-start: 4px; vertical-align: -3px; }
+body[data-page="index"] .lp-subjects-title { margin: var(--s4) 0 var(--s2); font-size: var(--fs-base); }
+body[data-page="index"] .lp-group { margin-block: var(--s3) 0; }
+/* Lens state in the panel: groups in the lens get the accent heading and an "in the lens" badge;
+   the others keep full-contrast text with a muted heading and dashed row rules (no opacity). */
+body[data-page="index"] .lp-group.is-lens h5 { color: var(--accent); }
+body[data-page="index"] .lp-group.is-faded h5 { color: var(--text-2); font-weight: 600; }
+body[data-page="index"] .lp-group.is-faded .lp-row { border-inline-start-style: dashed; }
+body[data-page="index"] .lp-lens-mark { display: none; }
+body[data-page="index"] .lp-group.is-lens .lp-lens-mark {
+  display: inline-block;
+  padding: 0 0.5em;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+body[data-page="index"] .lp-group h5 { display: flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s1); font-size: var(--fs-sm); }
+body[data-page="index"] .lp-group h5 .count { font-weight: 500; color: var(--text-2); }
+body[data-page="index"] .lp-rows { list-style: none; margin: 0; padding: 0; }
+body[data-page="index"] .lp-row { margin: 0; padding: var(--s1) 0 var(--s1) var(--s3); border-inline-start: 3px solid var(--dot, var(--border-strong)); }
+body[data-page="index"] .lp-row + .lp-row { margin-block-start: var(--s1); }
+body[data-page="index"] .lp-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); }
+body[data-page="index"] .lp-meta a { font-weight: 600; font-size: var(--fs-sm); }
+body[data-page="index"] .lp-concept { margin: 2px 0 0; font-size: var(--fs-sm); color: var(--text-2); }
+body[data-page="index"] .lp-more { font-size: var(--fs-sm); }
+body[data-page="index"] .lp-nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s2); margin-block-start: var(--s4); padding-block-start: var(--s3); border-top: 1px solid var(--border); }
+body[data-page="index"] .lp-step { max-width: 100%; white-space: normal; text-align: start; }
+body[data-page="index"] .lp-start-title { margin-block-end: var(--s2); font-weight: 650; }
+body[data-page="index"] .lp-keys { margin-block-start: var(--s4); font-size: var(--fs-sm); color: var(--text-2); }
+
+body[data-page="index"] .loop-foot-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+
+/* ================================================================ one pass around the loop */
+body[data-page="index"] #one-pass { margin-block-start: var(--s5); }
+body[data-page="index"] .loop-steps { padding-inline-start: 1.6em; }
+body[data-page="index"] .loop-steps li { margin-block: var(--s2); padding-inline-start: var(--s1); }
+body[data-page="index"] .loop-steps button.link { font-weight: 650; }
+body[data-page="index"] .one-pass-note { margin-block-start: var(--s3); }
+
+/* ================================================================ lens */
+body[data-page="index"] .lens-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+body[data-page="index"] .lens-sentence { min-height: 3.2em; margin-block: var(--s3); font-weight: 600; max-width: 72ch; }
+/* What the one selected discipline brings: a labelled sentence between the count sentence and the strip. */
+body[data-page="index"] .lens-brings { max-width: 72ch; margin-block: calc(-1 * var(--s1)) var(--s3); }
+body[data-page="index"] .lens-brings-label { display: block; font-size: var(--fs-sm); font-weight: 700; color: var(--text-2); }
+/* Routes into the atlas, below the strip. */
+body[data-page="index"] .lens-more { display: flex; flex-wrap: wrap; gap: 0 var(--s4, 16px); margin-block: var(--s2) 0; }
+body[data-page="index"] .lens-link { display: inline-flex; align-items: center; min-height: var(--hit); font-weight: 650; }
+body[data-page="index"] .lens-link svg { flex: none; width: 16px; height: 16px; margin-inline-start: 4px; }
+body[data-page="index"] .lens-parts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
+  gap: var(--s2);
+}
+body[data-page="index"] .lens-parts li { margin: 0; min-width: 0; }
+body[data-page="index"] .lens-part {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--hit);
+  height: 100%;
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--r1);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  text-decoration: none;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+body[data-page="index"] .lens-part:hover { border-color: var(--accent); }
+body[data-page="index"] .lens-part-num { font-family: var(--font-mono); color: var(--text-2); }
+body[data-page="index"] .lens-part-name { flex: 1 1 auto; min-width: 0; }
+body[data-page="index"] .lens-part-n {
+  flex: none;
+  padding: 0 0.5em;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+body[data-page="index"] .lens-parts.is-active .lens-part:not(.is-dim) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+body[data-page="index"] .lens-parts.is-active .lens-part:not(.is-dim) .lens-part-n { background: var(--accent); color: var(--accent-contrast); }
+/* Parts outside the lens: dashed outline and plain count instead of opacity (the links stay AA-legible). */
+body[data-page="index"] .lens-part.is-dim { background: var(--bg); border-style: dashed; border-color: var(--border-strong); }
+body[data-page="index"] .lens-part.is-dim .lens-part-n { background: transparent; font-weight: 500; }
+
+/* ================================================================ numbers and cards */
+body[data-page="index"] #numbers-grid .stat-value { font-size: var(--fs-md); overflow-wrap: anywhere; }
+body[data-page="index"] .entry-card { height: 100%; }
+body[data-page="index"] .entry-card .card-title { margin: var(--s1) 0 var(--s2); }
+body[data-page="index"] .entry-card p { margin: 0; color: var(--text-2); }

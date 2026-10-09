@@ -1,0 +1,61 @@
+/*
+ * about.css: the About page (about.html). Every rule is scoped under body[data-page="about"].
+ */
+
+body[data-page="about"] .about-section { margin-block-start: var(--s7); }
+body[data-page="about"] .about-section > h2 { margin-block-start: 0; }
+body[data-page="about"] .about-section h3 { margin-block-start: var(--s5); }
+
+/* ================================================================ contents */
+body[data-page="about"] .about-toc { margin-block: var(--s5) 0; max-width: 72ch; }
+body[data-page="about"] .about-toc-title { margin: 0 0 var(--s1); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); }
+body[data-page="about"] .about-toc ol { margin: 0; padding-inline-start: 1.4em; columns: 2 220px; column-gap: var(--s5); }
+body[data-page="about"] .about-toc li { margin: 0; break-inside: avoid; }
+body[data-page="about"] .about-toc a { display: inline-flex; align-items: center; min-height: var(--hit); }
+
+/* ================================================================ scope */
+body[data-page="about"] .scope-card h3 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin-block-start: 0; }
+body[data-page="about"] .scope-card ul { margin-block-end: 0; }
+body[data-page="about"] .scope-card li + li { margin-block-start: var(--s2); }
+body[data-page="about"] .scope-out { background: var(--bg); }
+body[data-page="about"] .adds { list-style: none; padding: 0; }
+body[data-page="about"] .adds li { margin-block: var(--s2); }
+body[data-page="about"] .adds .tag { margin-inline-end: var(--s1); }
+
+/* ================================================================ parameters */
+body[data-page="about"] #param-table .table td:nth-child(2) { min-width: 14em; }
+body[data-page="about"] #param-table .table td:last-child { min-width: 16em; color: var(--text-2); }
+body[data-page="about"] #param-table .table th[scope="row"] { min-width: 10em; }
+body[data-page="about"] .param-value { font-variant-numeric: tabular-nums; }
+body[data-page="about"] .worked { margin-block: var(--s5) 0; max-width: 80ch; }
+body[data-page="about"] .worked-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin-block-end: var(--s2); font-weight: 700; font-size: var(--fs-md); }
+body[data-page="about"] .worked .eq { margin-block: var(--s2) var(--s3); }
+/* The worked sums (squares to five decimals) fit at 360px; on narrower phones shrink them slightly so they still do. */
+@media (max-width: 359px) { body[data-page="about"] .worked .katex-display { font-size: 0.92em; } }
+
+/* ================================================================ reproduction */
+body[data-page="about"] .compare { min-width: 30em; font-variant-numeric: tabular-nums; }
+body[data-page="about"] .compare thead th { vertical-align: bottom; }
+body[data-page="about"] .compare th[scope="row"] { min-width: 13em; }
+body[data-page="about"] #scenario-table .table th[scope="row"] { min-width: 15em; }
+body[data-page="about"] .compare .tag { margin-inline-start: var(--s1); }
+body[data-page="about"] .compare td.is-fresh { animation: about-fresh 1.4s ease-out; }
+@keyframes about-fresh { from { background: var(--ok-bg); } to { background: transparent; } }
+body[data-page="about"] .mc-controls { margin-block: var(--s3); }
+body[data-page="about"] .mc-controls .progress-bar { width: 100%; }
+body[data-page="about"] .mc-explain { margin-block-start: var(--s4); }
+body[data-page="about"] #scenario-table .table { min-width: 52em; }
+body[data-page="about"] .scn-name { display: flex; flex-direction: column; align-items: flex-start; }
+body[data-page="about"] .scn-purpose { font-size: var(--fs-sm); font-weight: 400; color: var(--text-2); }
+body[data-page="about"] .scn-events { display: flex; flex-wrap: wrap; gap: 2px var(--s2); font-family: var(--font-mono); font-size: var(--fs-xs); }
+body[data-page="about"] .scn-event { white-space: nowrap; }
+body[data-page="about"] .req-mini { display: inline-flex; flex-wrap: nowrap; gap: var(--s1); }
+body[data-page="about"] .req-mini .badge { position: relative; font-size: var(--fs-xs); }
+/* LOCAL (request P0): .scroll-x { position: relative } so visually hidden text in a scrolled table cannot widen the page. */
+body[data-page="about"] .scroll-x { position: relative; }
+body[data-page="about"] .scn-note { font-size: var(--fs-sm); color: var(--text-2); max-width: 72ch; }
+
+/* ================================================================ labels and privacy */
+body[data-page="about"] #evidence-counts .ev { margin-inline: 0.15em; }
+body[data-page="about"] #labels-legend { max-width: 72ch; }
+body[data-page="about"] .privacy-statement { max-width: 72ch; font-weight: 600; }

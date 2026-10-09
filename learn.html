@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning path · Attitude Control: The Big Picture</title>
+<meta name="description" content="Thirteen modules that follow a student spacecraft attitude-control project through its lifecycle, from requirements to operations, with progress ticks.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/css/pages/learn.css">
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/pages/learn.js"></script>
+</head>
+<body data-page="learn">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container">
+    <h1>Learning path</h1>
+    <p class="lede">Thirteen modules follow the project through its lifecycle, from the first requirement to operating the spacecraft. Each one rebuilds one part of the project with widgets you can change, and ends by showing which subjects feed that part.</p>
+
+    <section class="learn-progress card" id="progress" aria-labelledby="progress-title">
+      <h2 id="progress-title" class="visually-hidden">Your progress</h2>
+      <div class="learn-progress-head">
+        <p class="learn-progress-text" id="progress-text">0 of 13 read</p>
+        <p class="learn-total muted" id="learn-total"></p>
+      </div>
+      <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="13" aria-valuenow="0" aria-labelledby="progress-text"><span></span></div>
+      <div class="btn-row learn-progress-actions" id="progress-actions"></div>
+      <p class="status-line" id="progress-status" aria-live="polite"></p>
+      <p class="learn-note muted">Ticks are kept in this browser only. The thirteen dots at the top of every module page show them too.</p>
+    </section>
+
+    <nav class="phase-strip" id="phases" aria-label="Lifecycle phases">
+      <ol id="phase-strip"></ol>
+    </nav>
+
+    <div class="path" id="path">
+      <noscript><p>The learning path is built from the site's data and needs JavaScript. The modules are: <a href="m01-requirements.html">01 Requirements</a>, <a href="m02-architecture.html">02 Architecture</a>, <a href="m03-dynamics.html">03 Dynamics</a>, <a href="m04-integration.html">04 Integration</a>, <a href="m05-control.html">05 Control</a>, <a href="m06-actuators.html">06 Actuators</a>, <a href="m07-sensors.html">07 Sensors</a>, <a href="m08-safe-mode.html">08 Safe mode</a>, <a href="m09-verification.html">09 Verification</a>, <a href="m10-software.html">10 Software</a>, <a href="m11-visualisation.html">11 Visualisation</a>, <a href="m12-project-risk.html">12 Project and risk</a> and <a href="m13-operations.html">13 Operations</a>.</p></noscript>
+    </div>
+
+    <section id="routes" class="learn-section" aria-labelledby="routes-title">
+      <h2 id="routes-title">Shorter routes through the path</h2>
+      <div class="prose">
+        <p>The modules are written to be read in order, but each one names its prerequisites, so you can also follow a theme. Three suggestions:</p>
+      </div>
+      <div class="grid-3 routes" id="route-list"></div>
+    </section>
+
+    <section id="anatomy" class="learn-section" aria-labelledby="anatomy-title">
+      <h2 id="anatomy-title">What a module page contains</h2>
+      <div class="prose">
+        <ol class="anatomy">
+          <li><strong>A purpose line</strong>, its phase in the lifecycle and the modules it builds on.</li>
+          <li><strong>“By the end you can…”</strong>: four to six objectives to check yourself against.</li>
+          <li><strong>Sections</strong> of explanation with equations, units and worked numbers, and <strong>interactive widgets</strong>. Every widget says what to try and what to notice.</li>
+          <li><strong>“Try it in the simulator”</strong>: links that open the full simulator on a matching scenario.</li>
+          <li><strong>Three questions</strong> to answer before you reveal the explanation.</li>
+          <li><strong>“Where this came from”</strong>: every subject whose material feeds the module, grouped by discipline, with how strong the link is and where the evidence comes from.</li>
+        </ol>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

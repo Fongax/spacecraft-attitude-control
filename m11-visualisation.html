@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11 Visualisation and UI · Attitude Control: The Big Picture</title>
+<meta name="description" content="Follow a quaternion to pixels, interpolate attitude for playback, and design plots and mode annunciation that check requirements at a glance.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m11.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m11.js"></script>
+</head>
+<body data-page="m11">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 11</span>
+      <h1>Visualisation and UI</h1>
+      <p class="module-purpose">How four numbers become a moving spacecraft on a screen, how a recorded run is played back smoothly, and how plots and mode displays let a person check requirements, and predict what the automation will do next, at a glance.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Build</span>
+        <span>About 20 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ animation -->
+    <section id="animation" aria-labelledby="animation-title">
+      <h2 id="animation-title">From quaternion to pixels</h2>
+      <div class="prose">
+        <p>The project animates its results: a simplified bus with solar panels and a body-fixed boresight axis turns relative to an inertial frame, and the geometry is "representative rather than CAD-accurate" <span class="tag tag-project">Project</span>. Two of its functions carry the whole idea. <code>quat_to_dcm</code> turns the attitude quaternion into a direction cosine matrix, and <code>draw_spacecraft_frame</code> draws or updates the model <span class="tag tag-project">Project</span>. This site does the same on a plain canvas, with a box bus of 0.212 × 0.173 × 0.274 m, the uniform 4 kg box whose inertia matches the project's \(J\) to within 0.2% <span class="tag tag-derived">Derived</span>.</p>
+        <p>Every frame runs the same pipeline. Convert \(q\) to a rotation matrix <em>once</em>; rotate each body-frame vertex into the inertial frame; project it onto the screen; sort the faces from far to near; draw them in that order so near faces paint over far ones.</p>
+        <div class="eq">\[ R(q)=(q_0^2-q_v^{\top}q_v)\,I+2\,q_vq_v^{\top}+2\,q_0[q_v\times],\qquad v_I=R\,v_B,\qquad (x_s,\ y_s,\ d)=(c_x+s\,v_I\!\cdot\!\hat r,\ \ c_y-s\,v_I\!\cdot\!\hat u,\ \ v_I\!\cdot\!\hat d) \]</div>
+        <p class="eq-note">\(\hat r\), \(\hat u\) and \(\hat d\) are the camera's right, up and toward-viewer directions; \(s\) is the pixel scale. The depth \(d\) is what the face sort uses.</p>
+        <p>Why convert once? The Algorithms notes count multiplications to choose the evaluation order of a matrix chain; applied here, rotating a vertex with the quaternion "sandwich" \(q\otimes v\otimes q^{*}\) costs two Hamilton products of 16 multiplications each, while applying a matrix costs 9. And composing two rotations is itself a matrix-chain question:</p>
+        <div class="eq">\[ (R_1R_2)\,V:\ 27+9N\qquad\text{against}\qquad R_1(R_2V):\ 18N\qquad (N=1000:\ 9027\ \text{vs}\ 18\,000) \]</div>
+        <p>A canvas has no depth buffer, so faces are drawn back to front: the painter's algorithm. Between two frames the attitude barely changes, so last frame's order is almost sorted, and the same notes show that insertion sort costs \((n-1)\) plus the number of inversions: nearly linear when the input is nearly sorted. The simplified bus could be replaced by exported CAD geometry, every vertex still rotated by the quaternion-derived matrix each frame; producing that geometry is typical content of a digital design and modelling subject <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-pipeline" aria-labelledby="w-pipeline-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-pipeline-title">Quaternion-to-pixels pipeline</h3>
+          <p class="widget-try"><strong>Try:</strong> set an axis and an angle, press "Step" to walk through the five stages, then drag the angle and watch the draw order change. <strong>Notice:</strong> four numbers become one matrix, eight corners, eight screen points and a face order; only the last stage touches pixels.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>All numbers come from <code>ADCS.wire.pipeline(q)</code>, the same function that draws every wireframe on this site. Vertices in metres; screen coordinates in CSS pixels.</p>
+          <span class="tags"><span class="tag tag-derived">Derived</span><span class="tag tag-site">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ frames -->
+    <section id="frames" aria-labelledby="frames-title">
+      <h2 id="frames-title">Inertial vs body frames on screen</h2>
+      <div class="prose">
+        <p>The project's animation shows the spacecraft <dfn data-term="body-frame">body frame</dfn> rotating relative to an <dfn data-term="inertial-frame">inertial frame</dfn> <span class="tag tag-project">Project</span>, and that single design choice does a lot of teaching. Drawing both sets of axes makes the kinematics visible: the inertial triad stays put, the body triad turns with the bus, and the angular velocity is an arrow fixed in neither. Rotating frames and the transport theorem are typical content of a kinematics-and-dynamics subject <span class="tag tag-typical">Typical content</span>:</p>
+        <div class="eq">\[ \left.\frac{dA}{dt}\right|_{I}=\left.\frac{dA}{dt}\right|_{B}+\omega\times A \]</div>
+        <p>That one equation is why \(\omega\) is expressed in the body frame, and where the gyroscopic term \(\omega\times J\omega\) in Euler's equation comes from (<a href="m03-dynamics.html">module 03</a>).</p>
+        <p>The UI has a second frame question to answer. People think in roll, pitch and yaw, so the project's interface takes the initial attitude as three Euler angles <span class="tag tag-project">Project</span>, but it simulates with quaternions. The reason is the singularity in the Euler-angle rates, which divide by \(\cos\theta\):</p>
+        <div class="eq">\[ \dot\psi=\frac{q\sin\phi+r\cos\phi}{\cos\theta}\ \to\ \infty\quad\text{as}\quad\theta\to\pm90^{\circ} \]</div>
+        <p>This <dfn data-term="gimbal-lock">gimbal lock</dfn> argument, and the Euler-angle kinematics behind it, are typical content of an aerodynamics subject that covers aircraft rigid-body equations <span class="tag tag-typical">Typical content</span>. Euler angles are a good <em>input and display</em> format and a poor <em>state</em>; the screen can show roll, pitch and yaw while the engine never stores them.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ plots -->
+    <section id="plots" aria-labelledby="plots-title">
+      <h2 id="plots-title">Plots that check requirements</h2>
+      <div class="prose">
+        <p>A result plot should answer a question without a calculator. The trick is to draw the requirement on the plot: the rate norm with lines at 0.5 and 6 deg/s (the safe-mode thresholds) and 15 deg/s (REQ-S1); the attitude error with 2° (REQ-F2) and 4° (the return guard); each torque axis with ±3 mN m (REQ-S2) <span class="tag tag-project">Project</span>. Add the mode as coloured bands underneath and the eye checks a run in a second: a curve that crosses a red line is a failed requirement. Plots with threshold lines, and a slider interface that mirrors the project's, are typical content of a programming-for-engineers subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>Colour alone is not enough: many readers see red and green poorly, and printouts are often grey. Every series on this site therefore also has its own <em>dash pattern</em> and label, modes carry text names, and pass and fail badges carry icons. The figure below lets you check that claim by switching the colour off.</p>
+        <p>Plots are also data structures. The Data Structures notes teach the <em>sparse table</em>, which answers range-maximum queries on static data in O(1). Applied here: once a run is finished its log never changes, so a sparse table answers "what was the peak rate in the window I dragged?", and <em>prefix sums</em> give the windowed control effort:</p>
+        <div class="eq">\[ \max_{[l,r]}=\max\!\big(M_j[l],\ M_j[r-2^{j}+1]\big),\ \ j=\lfloor\log_2(r-l+1)\rfloor,\qquad E(t_1,t_2)=P[k_2]-P[k_1] \]</div>
+        <p>The overlap trick works for a maximum, because counting a sample twice changes nothing, but would silently double-count effort, which is why the two queries need different structures. Annotated step-response, speed–torque and phasor diagrams in the Electromechanics notes are good models for result plots, and the chart-reading culture of the Design of Machine Elements notes (S-N curves, Goodman diagrams) suits interactive plots. Low-dimensional maps of Monte Carlo trials need care: the Unsupervised and Reinforcement Learning notes found that t-SNE invents clusters in noise, that UMAP's claimed advantage in global structure did not reproduce, and that PCA preserves global structure better. Plots exist to make results understandable to others, a point of technical communication that is typical content of an engineering design practice subject <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-plot-anatomy" aria-labelledby="w-plot-anatomy-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-plot-anatomy-title">Anatomy of a requirement plot</h3>
+          <p class="widget-try"><strong>Try:</strong> switch the requirement lines and mode bands off, then on again, and switch to the greyscale preview. <strong>Notice:</strong> without the lines you cannot tell whether T03 passes; in greyscale the three torque axes are still told apart by their dashes.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Preset T03 (safe-mode upset with a fault from 45 to 60 s) through the full engine. Thresholds are read from <code>ADCS.params</code>.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-site">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ playback -->
+    <section id="playback" aria-labelledby="playback-title">
+      <h2 id="playback-title">Time, interpolation and binary search</h2>
+      <div class="prose">
+        <p>The project's interface plays its animation at a chosen <em>stride</em> and <em>speed</em> <span class="tag tag-project">Project</span>, so the display time almost never lands exactly on a logged sample. Two questions follow: which samples bracket the display time, and what attitude lies between them?</p>
+        <p>The first is a search. The time column is sorted, so binary search finds the bracketing interval in \(\lceil\log_2 n\rceil\) steps: 14 steps for the 12,001 samples of a 120 s run at 0.01 s <span class="tag tag-derived">Derived</span>, done in place on the indices with no copying: the in-place binary search of the Computing Algorithms notes.</p>
+        <p>The second is interpolation, and attitude is not an ordinary number. Interpolating Euler angles component by component gives a wobbling, non-uniform path; interpolating quaternion components linearly leaves the unit sphere. The right tool is <dfn data-term="slerp">slerp</dfn>, which moves at constant angular speed along the great arc between the two samples:</p>
+        <div class="eq">\[ \mathrm{slerp}(q_a,q_b;s)=\frac{\sin\big((1-s)\Omega\big)}{\sin\Omega}\,q_a+\frac{\sin(s\Omega)}{\sin\Omega}\,q_b,\qquad \cos\Omega=q_a\!\cdot q_b\ \ (\text{flip }q_b\text{ if negative}) \]</div>
+        <p>For small steps, normalised linear interpolation ("nlerp": blend, then divide by the norm) follows almost the same path and is cheaper. Flipping \(q_b\) when the dot product is negative matters: \(q\) and \(-q\) are the same attitude, and without the flip the interpolation takes the long way round. This site's <code>ADCS.sim.sampleAt</code> does exactly this: binary search, then slerp for the attitude and linear interpolation for everything else.</p>
+      </div>
+
+      <figure class="widget" id="w-playback" aria-labelledby="w-playback-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-playback-title">Playback interpolation</h3>
+          <p class="widget-try"><strong>Try:</strong> scrub t* through the first 5 s, where T03 spins at up to 11 deg/s, then change the sample spacing to 5 s. <strong>Notice:</strong> the nearest sample can be several degrees off while nlerp and slerp agree with each other to a fraction of that; at 5 s spacing the remaining error is dominated by the motion itself, not by the interpolation method.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Truth is the full-rate T03 log at 0.01 s; the playback copy keeps one sample every 1, 2 or 5 s. Errors are rotation angles between the interpolated and the true attitude.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ mvc -->
+    <section id="mvc" aria-labelledby="mvc-title">
+      <h2 id="mvc-title">One model, many views</h2>
+      <div class="prose">
+        <p>The project shipped a modern interface and a legacy one for older installations, both over the same simulation functions, and a batch script that calls those functions with no interface at all <span class="tag tag-project">Project</span>. That is the payoff of <dfn data-term="mvc">model–view–controller</dfn> separation, which the Software Engineering and Architecture notes describe: the <em>model</em> (dynamics, controllers, mode logic, result tables) knows nothing about the <em>views</em> (plots, animation, CSV and video export), and the <em>controller</em> (the UI callbacks for initial attitude, rates, controller type, fault window and playback stride) only passes inputs in. The notes' practical test translates directly: <em>if checking the safe-mode logic needs the UI open, the separation has failed.</em> Here, the batch run and the Monte Carlo campaign call the core headlessly, and the Python mirror checks the CSV files the core writes. A web front end driving the same simulation core is the same idea, and is typical content of a software-projects subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The other half of the lesson is the event loop. A user interface runs its callbacks on one thread, and the Systems Programming and Memory notes show the consequence: code between two yields runs to completion, so a blocking call stalls everything. A 60 s simulation inside a button callback freezes the window. The fix is to run the model, then animate from a timer, or to break long work into chunks. This site's Monte Carlo runner does the second, about 12 ms of trials at a time, so the page stays responsive.</p>
+        <p>Views can also be fed by <em>events</em>. Publish a <code>ModeChanged{from, to, t, reason, values}</code> record at each transition and let the logger, telemetry, timeline and annunciator subscribe; the mode timeline is then a fold over the events, and a replayed event log rebuilds it exactly. For streaming live attitude to a dashboard, the Networking notes measured 6 bytes of WebSocket framing per message against about 2,818 bytes for an HTTP poll, and note that one-way server events are enough for telemetry.</p>
+      </div>
+
+      <figure class="widget" id="w-views" aria-labelledby="w-views-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-views-title">One model, many views</h3>
+          <p class="widget-try"><strong>Try:</strong> pick a preset, drag the time slider, switch views off and on, then press "Replay events". <strong>Notice:</strong> every view reads the same single run, switching a view off changes nothing in the model, and the timeline rebuilt from the event feed alone matches the logged modes exactly.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>One <code>ADCS.sim.run</code> per preset; the views only read its result and <code>ADCS.sim.sampleAt</code>.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-site">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ annunciation -->
+    <section id="annunciation" aria-labelledby="annunciation-title">
+      <h2 id="annunciation-title">Mode annunciation</h2>
+      <div class="prose">
+        <p>Automation that changes mode on its own creates a new failure: the person watching no longer knows what it is doing. <dfn data-term="mode-confusion">Mode confusion</dfn>, where the operator's mental model of the mode differs from the real one, and the "automation surprise" it causes are typical content of a human-factors-for-pilots subject <span class="tag tag-typical">Typical content</span>. The design rules that follow are simple to state:</p>
+        <ul>
+          <li><strong>Always show the current mode</strong>, large, with its name, not only a colour.</li>
+          <li><strong>Show why it changed</strong>: which guard fired, with the value that fired it.</li>
+          <li><strong>Show what the next change needs</strong>: each exit guard as a lamp, and the remaining dwell before a return to NOMINAL as a progress bar.</li>
+        </ul>
+        <p>With the project's guards (enter detumble above 6 deg/s or after a 0.5 s fault; leave after 2 s below 0.5 deg/s; return when the fault is clear, the rate is below 0.5 deg/s, the error is below 4° and 8 s have passed) <span class="tag tag-project">Project</span>, a display that shows those four lamps makes the machine predictable: anyone can say what it will do next. The forbidden transitions help too, because there are fewer surprises to explain. The site's annunciator, <code>ADCS.ui.modeAnnunciator</code>, follows these rules, and the lab below tests them on you.</p>
+        <p>The lab uses "predict, then reveal": commit to an answer before seeing the outcome. Peer Instruction, with its concept question, vote and re-vote, is typical content of an aviation science subject <span class="tag tag-typical">Typical content</span>, and it suits animations well because a prediction makes the surprise visible.</p>
+      </div>
+
+      <figure class="widget" id="w-annunciator-lab" aria-labelledby="w-annunciator-lab-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-annunciator-lab-title">Annunciator design lab</h3>
+          <p class="widget-try"><strong>Try:</strong> at each pause point, answer first using only the poor UI, then reveal the good UI and answer again. <strong>Notice:</strong> with plots alone you are guessing; with the lamps and the dwell bar every answer can be read off the screen.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>One T03 run (transitions at 0.00, 4.50, 39.26, 45.49, 47.49 and 60.00 s), shown only up to each pause point.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ performance -->
+    <section id="performance" aria-labelledby="performance-title">
+      <h2 id="performance-title">Performance budget</h2>
+      <div class="prose">
+        <p>Can a browser really run the project's verification? RK4 evaluates the dynamics four times per step, so counting the work as the Algorithms notes teach gives, for the Monte Carlo campaign:</p>
+        <div class="eq">\[ N_{eval}=4\cdot\frac{T}{\Delta t}\cdot n=4\cdot\frac{60\ \text{s}}{0.01\ \text{s}}\cdot 60\approx1.44\times10^{6} \]</div>
+        <p>About 1.4 million derivative evaluations, each a few dozen multiplications: well under a few seconds of JavaScript, <em>if</em> the work is chunked so the page never freezes. This site's 120 s campaign does twice that and runs in slices of about 12 ms <span class="tag tag-site">Site default</span>.</p>
+        <p>Drawing is the other budget. A 120 s run has 12,001 samples per channel <span class="tag tag-derived">Derived</span>, but a plot is perhaps 600 pixels wide, so drawing every sample wastes time and adds nothing. Decimate to the pixel width, keeping each column's minimum and maximum so that short spikes, such as a one-sample threshold crossing, never vanish. Plot redraws on this site take a few milliseconds, well inside the 16 ms of a 60 Hz frame.</p>
+        <p>Measure it yourself: the button runs preset T03 on your device.</p>
+        <p class="m11-bench"><button type="button" class="btn secondary sm" id="bench-btn">Time one T03 run here</button> <span id="bench-out" class="status-line" aria-live="polite"></span></p>
+      </div>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <p class="in-short"><strong>In short:</strong> a quaternion reaches the screen through one matrix per frame, a projection and a painter's sort; playback needs a binary search and slerp; plots earn their place by drawing the requirements on them; one model can feed many views as long as the model never knows about them; and a mode display prevents surprises only if it says what the mode is, why it changed and what the next change needs. The subjects below supplied those pieces.</p>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

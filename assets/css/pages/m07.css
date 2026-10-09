@@ -1,0 +1,31 @@
+/*
+ * m07.css: Module 07, sensors and estimation (package P5).
+ * Everything is scoped under body[data-page="m07"]; shared components keep their own styles.
+ */
+
+/* LOCAL (request P0): .scroll-x { position: relative; } so absolutely positioned children
+   (KaTeX's hidden MathML, visually hidden text) are clipped by the scroll box. */
+body[data-page="m07"] .scroll-x { position: relative; }
+
+body[data-page="m07"] .in-short {
+  max-width: 72ch;
+  margin-block: var(--s6) var(--s4);
+  padding-inline-start: var(--s3);
+  border-inline-start: 3px solid var(--accent);
+}
+
+/* the extension banner sits between the meta line and the prerequisites */
+body[data-page="m07"] .module-hero > .callout.ext { max-width: 72ch; }
+
+/* plots, readouts and notes stacked in a widget output */
+body[data-page="m07"] .widget-output > .plot,
+body[data-page="m07"] .widget-output > .grid-2 { margin-block-end: var(--s4); }
+body[data-page="m07"] .widget-output > .grid-2 .plot { margin-block-end: 0; }
+body[data-page="m07"] .widget-output > .status-line { margin-block-end: var(--s3); color: var(--text); }
+body[data-page="m07"] .widget-output > .req-badges { margin-block-end: var(--s4); }
+body[data-page="m07"] .widget-output > .callout:last-child { margin-block-end: 0; }
+body[data-page="m07"] .m07-simlink { margin-block: 0 var(--s3); }
+body[data-page="m07"] .m07-simlink .muted { font-size: var(--fs-sm); }
+
+/* long API names in widget notes wrap instead of widening the page */
+body[data-page="m07"] .widget-foot code, body[data-page="m07"] .prose code { overflow-wrap: anywhere; }

@@ -1,0 +1,80 @@
+/* m03.css: module 03 (dynamics). Everything is scoped under body[data-page="m03"]. */
+
+body[data-page="m03"] .in-short { margin-block-start: var(--s6); }
+body[data-page="m03"] .in-short h2 { margin-block-start: 0; }
+body[data-page="m03"] .readouts { margin-block-end: var(--s2); }
+body[data-page="m03"] .widget-output > .btn-row { margin-block-end: var(--s3); }
+
+/* LOCAL (request P0): .scroll-x { position: relative; } so absolutely positioned children (KaTeX's
+   hidden MathML, .visually-hidden spans) are clipped by the scroll box instead of widening the page. */
+body[data-page="m03"] .scroll-x { position: relative; }
+
+/* ---------------------------------------------------------------- wire legends */
+body[data-page="m03"] .wire { margin-block-end: var(--s2); }
+body[data-page="m03"] .gyro-legend {
+  position: absolute;
+  left: var(--s2);
+  top: var(--s1);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--s2);
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  pointer-events: none;
+}
+body[data-page="m03"] .sw { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-inline-end: 3px; }
+body[data-page="m03"] .sw-accent { background: var(--accent); }
+body[data-page="m03"] .sw-text2 { background: var(--text-2); }
+body[data-page="m03"] .sw-warn { background: var(--warn); }
+
+/* ---------------------------------------------------------------- W3.6 box, W3.1 gyro */
+body[data-page="m03"] .box-note { font-size: var(--fs-sm); margin: 0; }
+body[data-page="m03"] .gyro-grid,
+body[data-page="m03"] .gimbal-grid,
+body[data-page="m03"] .quat-grid,
+body[data-page="m03"] .racket-grid { display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 860px) {
+  body[data-page="m03"] .gyro-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+  body[data-page="m03"] .gimbal-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+  body[data-page="m03"] .quat-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  body[data-page="m03"] .racket-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+}
+body[data-page="m03"] .gyro-zero,
+body[data-page="m03"] .gimbal-warn,
+body[data-page="m03"] .quat-note { display: flex; gap: var(--s2); align-items: flex-start; margin: 0 0 var(--s3); font-size: var(--fs-sm); }
+body[data-page="m03"] .gyro-zero svg,
+body[data-page="m03"] .gimbal-warn svg,
+body[data-page="m03"] .quat-note svg { flex: none; width: 18px; height: 18px; margin-block-start: 0.15em; color: var(--accent); }
+body[data-page="m03"] .gimbal-warn svg { color: var(--warn); }
+
+/* ---------------------------------------------------------------- W3.2 racket */
+body[data-page="m03"] .racket-predict { margin: 0; padding: var(--s2) var(--s3) var(--s3); border: 1px solid var(--border); border-radius: var(--r1); min-width: 0; }
+body[data-page="m03"] .racket-predict legend { font-weight: 650; font-size: var(--fs-sm); padding: 0 var(--s1); }
+body[data-page="m03"] .racket-opt { display: flex; align-items: center; gap: var(--s2); min-height: var(--hit); cursor: pointer; }
+body[data-page="m03"] .racket-opt input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); flex: none; }
+body[data-page="m03"] .racket-run { display: grid; gap: var(--s2); align-content: start; }
+body[data-page="m03"] .racket-run .field-help { margin: 0; }
+body[data-page="m03"] .racket-reveal { margin-block-end: var(--s4); padding: var(--s3) var(--s4); border: 1px solid var(--border); border-inline-start: 4px solid var(--accent); border-radius: var(--r1); font-size: var(--fs-sm); }
+body[data-page="m03"] .racket-reveal p { margin: 0 0 var(--s2); }
+body[data-page="m03"] .racket-reveal p:last-child { margin: 0; }
+body[data-page="m03"] .racket-verdict { display: flex; gap: var(--s2); align-items: flex-start; }
+body[data-page="m03"] .racket-verdict svg { flex: none; width: 18px; height: 18px; margin-block-start: 0.15em; }
+body[data-page="m03"] .racket-verdict.ok svg { color: var(--ok); }
+body[data-page="m03"] .racket-verdict.bad svg { color: var(--bad); }
+body[data-page="m03"] .racket-plots { display: grid; gap: var(--s3); min-width: 0; }
+body[data-page="m03"] .racket-anim .btn-row { margin-block-start: var(--s2); }
+
+/* ---------------------------------------------------------------- W3.4 gimbal */
+body[data-page="m03"] .gimbal-fixed { margin: 0; font-size: var(--fs-sm); color: var(--text-2); }
+
+/* ---------------------------------------------------------------- W3.3 quaternion builder */
+body[data-page="m03"] .quat-panel { padding-block-start: var(--s3); }
+body[data-page="m03"] .quat-info { min-width: 0; }
+body[data-page="m03"] .quat-info .readouts dd { word-break: break-word; }
+body[data-page="m03"] .quat-check { font-size: var(--fs-xs); color: var(--text-2); margin: 0; }
+body[data-page="m03"] .compose-grid { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); margin-block-end: var(--s3); }
+body[data-page="m03"] .compose-cell { min-width: 0; }
+body[data-page="m03"] .compose-title { margin: 0 0 var(--s1); font-weight: 700; font-family: var(--font-mono); }
+body[data-page="m03"] .compose-q { margin: 0; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-2); }

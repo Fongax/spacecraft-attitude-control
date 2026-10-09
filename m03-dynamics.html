@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 Dynamics, quaternions and the environment · Attitude Control: The Big Picture</title>
+<meta name="description" content="Model the spacecraft as a rigid body with Euler's equation and quaternions, and size the disturbance torques it must reject.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m03.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m03.js"></script>
+</head>
+<body data-page="m03">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 03</span>
+      <h1>Dynamics, quaternions and the environment</h1>
+      <p class="module-purpose">Model the spacecraft as a rigid body with Euler’s equation and quaternions, and size the disturbance torques it must reject.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Model</span>
+        <span>About 35 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ rigid body -->
+    <section id="rigid-body" aria-labelledby="rigid-body-title">
+      <h2 id="rigid-body-title">Rigid body and inertia</h2>
+      <div class="prose">
+        <p>The first project assumption is that the spacecraft is a rigid body: every particle keeps its distance from every other. Then six numbers describe the motion completely: three for the attitude and three for the angular velocity ω. How hard the body is to spin up about each axis is captured by the <dfn data-term="inertia-tensor">inertia tensor</dfn>, a 3 × 3 matrix built from the mass distribution, and the angular momentum is J times ω:</p>
+        <div class="eq">\[ J = \int_{body} \big(\lVert r\rVert^2 I - r\,r^\mathsf{T}\big)\,dm , \qquad H = J\,\omega \quad [\mathrm{kg\,m^2} \cdot \mathrm{rad/s} = \mathrm{N\,m\,s}] . \]</div>
+        <p>The project uses J = diag(0.035, 0.040, 0.025) kg m² <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>. Where could such numbers come from? For a uniform box of mass m and edges a, b, c along x, y, z, the integral gives the familiar result</p>
+        <div class="eq">\[ J_{xx} = \tfrac{m}{12}\,(b^2 + c^2), \quad J_{yy} = \tfrac{m}{12}\,(a^2 + c^2), \quad J_{zz} = \tfrac{m}{12}\,(a^2 + b^2) , \]</div>
+        <p>and a 4 kg box of 0.212 × 0.173 × 0.274 m reproduces the project’s J to three significant figures <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>. That is the box the wireframes on this site draw. The off-diagonal products of inertia vanish by symmetry, so the body axes are <dfn data-term="principal-axes">principal axes</dfn>: the eigenvectors of J. A real bus would take its mass properties (mass, centre of mass, inertia tensor and principal axes) from the CAD model.</p>
+        <p>A notation warning before going on: in a mechanics of materials subject, J usually means the <em>polar second moment of area</em> of a shaft section, in m⁴. Here J is the <em>mass</em> moment of inertia, in kg m². Same letter, different quantity.</p>
+        <p>The ideas come from several subjects. Inertia as a triple integral, with products of inertia vanishing by symmetry, is typical content of a second calculus subject; CAD mass-property evaluation of parts and assemblies is typical content of a digital design and modelling subject and of parametric CAD practice; and the polar-moment J is typical content of a first mechanics of materials subject. Machine-elements notes treat principal stresses as eigenvalues of a symmetric tensor, the same mathematics as the principal axes of J. Supervised learning notes teach least squares and ridge regression, whose extra term keeps the problem solvable when the data columns are nearly collinear. Because Euler’s equation is linear in the entries of J, they apply to identifying J from flight data, with ridge regularisation for a manoeuvre that excites some axes poorly <span class="tag tag-extension" title="Extension: beyond the original project scope.">Extension</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-box" aria-labelledby="w-box-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-box-title">Build-a-box inertia</h3>
+          <p class="widget-try"><strong>Try:</strong> make the box longer along y than along x (b &gt; a), or stretch a past c. <strong>Notice:</strong> the labels major, intermediate and minor move between axes; the intermediate one is the axis you cannot spin about stably (see below).</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls" id="box-controls"></div>
+          <div class="widget-output" id="box-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Uniform box formula. The simulator always uses the project J; it cannot take a J from a link, so the values here are for reading only.</p>
+          <span class="tags"><span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span> <span class="tag tag-project" title="Project: stated in the project notes.">Project</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ Euler -->
+    <section id="euler" aria-labelledby="euler-title">
+      <h2 id="euler-title">Euler’s equation</h2>
+      <div class="prose">
+        <p>Newton’s second law for rotation says that torque changes angular momentum, τ = dH/dt, but only in an inertial (non-rotating) frame. The controller, the wheels and J all live in the rotating body frame, where J is constant. The <strong>transport theorem</strong> converts a rate of change seen in the body frame into the inertial one:</p>
+        <div class="eq">\[ \dot H\big|_I = \dot H\big|_B + \omega \times H . \]</div>
+        <p>With H = Jω and J constant in the body frame, the law becomes <dfn data-term="euler-equation">Euler’s rotational equation</dfn>, the model the project integrates <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>:</p>
+        <div class="eq">\[ J\,\dot\omega + \omega \times (J\,\omega) = \tau_c + \tau_d \quad [\mathrm{N\,m}] . \]</div>
+        <p>τ<sub>c</sub> is the control torque from the wheels and τ<sub>d</sub> the disturbance. Written out for a diagonal J, each axis couples to the other two through the middle term:</p>
+        <div class="eq">\[ \begin{aligned} J_x\,\dot\omega_x + (J_z - J_y)\,\omega_y\,\omega_z &= \tau_x \\ J_y\,\dot\omega_y + (J_x - J_z)\,\omega_z\,\omega_x &= \tau_y \\ J_z\,\dot\omega_z + (J_y - J_x)\,\omega_x\,\omega_y &= \tau_z \end{aligned} \]</div>
+        <p>The units check: each term is kg m² × rad/s² = N m. If the body spins about only one axis, the products ω<sub>y</sub>ω<sub>z</sub> and so on vanish and each line reduces to the single-axis law τ = Jα. Aircraft engineers know these equations as the moment equations of flight dynamics, which carry a product of inertia I<sub>xz</sub> and are typical content of an advanced aerodynamics subject; set I<sub>xz</sub> to zero and they reduce to exactly these three lines. Deriving them with the transport theorem, together with H = Iω, the inertia tensor and the parallel-axis theorem, is typical content of a kinematics and dynamics subject; torque, moment of inertia and the conservation of angular momentum about a fixed axis are typical content of a first physics subject.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ gyroscopic term -->
+    <section id="gyro" aria-labelledby="gyro-title">
+      <h2 id="gyro-title">The gyroscopic term</h2>
+      <div class="prose">
+        <p>The <dfn data-term="gyroscopic-term">gyroscopic term</dfn> ω × (Jω) is what makes rotation in 3-D different from 1-D. Is it big enough to matter for this spacecraft? Take ω = [0.1, 0.1, 0] rad/s (about 5.7 deg/s on two axes):</p>
+        <div class="eq">\[ \begin{aligned} J\omega &= [0.0035,\ 0.0040,\ 0]\ \mathrm{N\,m\,s}, \\ \omega \times J\omega &= [0,\ 0,\ 0.1\times0.0040 - 0.1\times0.0035] = [0,\ 0,\ 5\times10^{-5}]\ \mathrm{N\,m} . \end{aligned} \]</div>
+        <p>That is 2.5 times the disturbance bound of 2×10⁻⁵ N m and 1.7% of the 3 mN m torque limit <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>: small against the wheels, but not something the controller can ignore at high rates. Two properties are worth remembering:</p>
+        <ul>
+          <li>It is <strong>zero when ω lies along a principal axis</strong>, because then Jω is parallel to ω.</li>
+          <li>It <strong>does no work</strong>: \(\omega \cdot (\omega \times J\omega) = 0\), so the kinetic energy \(T = \tfrac12\,\omega^\mathsf{T} J\,\omega\) changes only through the applied torques, \(\dot T = \omega \cdot (\tau_c + \tau_d)\). The term moves momentum between axes without adding or removing energy.</li>
+        </ul>
+        <p>Pilots of rotary-wing aircraft meet the same physics as rotor-disc precession, Ω<sub>p</sub> = M/H, which is typical content of a rotary wing operations subject. In a spacecraft it appears in full once the wheels’ stored momentum h<sub>w</sub> is included, as ω × (Jω + h<sub>w</sub>) (<a href="m06-actuators.html">module 06</a>).</p>
+      </div>
+
+      <figure class="widget" id="w-gyro" aria-labelledby="w-gyro-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-gyro-title">Gyroscopic coupling explorer</h3>
+          <p class="widget-try"><strong>Try:</strong> load “along x”, then add a little ω<sub>y</sub>; then load the worst case at the 15 deg/s limit. <strong>Notice:</strong> the term is exactly zero on a principal axis and largest when ω splits between the axes with the most different inertias (y and z).</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls" id="gyro-controls"></div>
+          <div class="widget-output" id="gyro-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Body frame shown with the body aligned to the inertial axes. Arrow lengths use separate scales; directions are exact. Jω lies almost on top of ω because the three moments are similar; the cross product is what the small difference leaves over.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span> <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ intermediate axis -->
+    <section id="intermediate" aria-labelledby="intermediate-title">
+      <h2 id="intermediate-title">Intermediate-axis theorem</h2>
+      <div class="prose">
+        <p>Spin a book or a tennis racket in the air about each of its three axes and one of the spins refuses to stay put: the object flips over every few turns. This is the <dfn data-term="intermediate-axis">intermediate-axis theorem</dfn>, and Euler’s equation predicts it. Sort the project’s principal moments:</p>
+        <div class="eq">\[ \underbrace{J_y = 0.040}_{\text{major}} \;>\; \underbrace{J_x = 0.035}_{\text{intermediate}} \;>\; \underbrace{J_z = 0.025}_{\text{minor}} \quad \mathrm{kg\,m^2} . \]</div>
+        <p>Now spin torque-free about axis 1 at rate Ω and add small rates ω<sub>2</sub>, ω<sub>3</sub> on the other two. Linearising the component equations gives</p>
+        <div class="eq">\[ \ddot\omega_2 = \frac{(J_3 - J_1)(J_1 - J_2)}{J_2\,J_3}\,\Omega^2\,\omega_2 , \]</div>
+        <p>so the perturbation <strong>grows exponentially when \((J_1 - J_2)(J_1 - J_3) < 0\)</strong>, which happens only when J<sub>1</sub> lies between the other two. For a spin about x at Ω = 0.5 rad/s the growth rate is \(\Omega\sqrt{0.05} \approx 0.11\ \mathrm{s^{-1}}\), an e-folding time of about 9 s <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>. About y or z the same expression is negative and the perturbations just oscillate.</p>
+        <p>The simulator confirms it with presets SPINX, SPINY and SPINZ: torque-free, 0.5 rad/s about one axis plus 0.01 rad/s on the other two, for 200 s <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span>. Spin about x flips at about 64 s and 166 s; spins about y and z stay put. Throughout, the kinetic energy T and the momentum magnitude |H| are conserved to about 10⁻¹⁴ <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>, which is also a strong check that the integrator is working (<a href="m04-integration.html">module 04</a>).</p>
+        <p>Conservation of angular momentum and rotation are typical content of an aviation science subject, often taught with predict-then-reveal concept questions like the one below; torque-free motion of a rigid body, where this instability lives, is typical content of a kinematics and dynamics subject. One refinement matters for real spacecraft: with energy dissipation (flexing panels, sloshing fuel), only the major axis stays stable, which is why spin-stabilised spacecraft are designed to spin about it.</p>
+      </div>
+
+      <figure class="widget" id="w-racket" aria-labelledby="w-racket-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-racket-title">Tennis-racket lab</h3>
+          <p class="widget-try"><strong>Try:</strong> predict which spin axis will flip, then run all three spins. <strong>Notice:</strong> only the spin about x reverses, while T and |H| stay constant to rounding error the whole time.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls" id="racket-controls"></div>
+          <div class="widget-output" id="racket-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Presets SPINX, SPINY and SPINZ run by the engine (RK4, dt 0.01 s, 200 s, no control, no disturbance). The animation plays at 10× real time.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span> <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span> <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ representing attitude -->
+    <section id="rotations" aria-labelledby="rotations-title">
+      <h2 id="rotations-title">Representing attitude</h2>
+      <div class="prose">
+        <p>Attitude needs at least three numbers. The most intuitive are <dfn data-term="euler-angles">Euler angles</dfn>: in the aerospace 3-2-1 sequence, yaw ψ about z, then pitch θ about the new y, then roll φ about the new x. This site uses them for input: the simulator takes roll, pitch and yaw in degrees (T01 starts at 25°, −15° and 20° <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>) and converts them to a quaternion.</p>
+        <p>The trouble appears when you integrate them. With the body rates written p, q, r (aircraft notation for ω<sub>x</sub>, ω<sub>y</sub>, ω<sub>z</sub>), the 3-2-1 kinematics are</p>
+        <div class="eq">\[ \dot\phi = p + (q\sin\phi + r\cos\phi)\tan\theta, \qquad \dot\theta = q\cos\phi - r\sin\phi, \qquad \dot\psi = \frac{q\sin\phi + r\cos\phi}{\cos\theta} . \]</div>
+        <p>At θ = ±90° the cosine in the denominator is zero. A perfectly ordinary body rate then demands infinite Euler-angle rates: yaw and roll describe the same rotation and one degree of freedom is lost. This is <dfn data-term="gimbal-lock">gimbal lock</dfn>, and it is a property of the coordinates, not of the spacecraft, which can rotate through that attitude without noticing. No three-number description avoids a singularity somewhere, which is the main reason attitude software works with quaternions: four numbers, one constraint, no singularities.</p>
+        <p>Euler-angle kinematics in the 3-2-1 sequence and their singularity at ±90° pitch are typical content of an advanced aerodynamics subject; converting the angles to a quaternion, as this site’s input does, is the spacecraft’s way round the singularity.</p>
+      </div>
+
+      <figure class="widget" id="w-gimbal" aria-labelledby="w-gimbal-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-gimbal-title">Gimbal-lock explorer</h3>
+          <p class="widget-try"><strong>Try:</strong> drag the pitch towards +90°. <strong>Notice:</strong> the roll and yaw rates shoot up without limit while the body rate and the quaternion rate \(|\dot q| = |\omega|/2\) do not change at all.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls" id="gimbal-controls"></div>
+          <div class="widget-output" id="gimbal-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Roll and yaw fixed at 0°, body rate ω = (0, 0, 0.1) rad/s. Rates are plotted as magnitudes on a log scale.</p>
+          <span class="tags"><span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ quaternions -->
+    <section id="quaternions" aria-labelledby="quaternions-title">
+      <h2 id="quaternions-title">Quaternion algebra</h2>
+      <div class="prose">
+        <p>A unit <dfn data-term="quaternion">quaternion</dfn> stores a rotation by angle α about the unit axis n̂ as four numbers, scalar first (the project’s convention) <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>:</p>
+        <div class="eq">\[ q = \big[\cos\tfrac{\alpha}{2},\ \hat n \sin\tfrac{\alpha}{2}\big] = [q_0,\ q_v], \qquad \lVert q \rVert = 1 . \]</div>
+        <p>Rotations combine with the <dfn data-term="hamilton-product">Hamilton product</dfn>, which is built from the dot and cross products you already know:</p>
+        <div class="eq">\[ p \otimes q = \big[\,p_0 q_0 - p_v \cdot q_v,\ \ p_0 q_v + q_0 p_v + p_v \times q_v\,\big] . \]</div>
+        <p>Because the cross product changes sign when its arguments swap, <strong>\(p \otimes q \neq q \otimes p\)</strong> in general: rotations do not commute. To rotate a vector, sandwich it: \(v' = q \otimes [0, v] \otimes q^*\), where \(q^* = [q_0, -q_v]\) is the conjugate (the inverse, for a unit quaternion). On this site q is the active rotation from body to inertial, so a body-frame vector v<sub>B</sub> maps to the inertial frame as \(v_I = q \otimes [0, v_B] \otimes q^*\). The attitude changes with the body rate according to</p>
+        <div class="eq">\[ \dot q = \tfrac12\, q \otimes [0,\ \omega] = \tfrac12\,\Omega(\omega)\,q, \qquad \Omega(\omega) = \begin{bmatrix} 0 & -\omega_x & -\omega_y & -\omega_z \\ \omega_x & 0 & \omega_z & -\omega_y \\ \omega_y & -\omega_z & 0 & \omega_x \\ \omega_z & \omega_y & -\omega_x & 0 \end{bmatrix} , \]</div>
+        <p>which is the kinematics equation in the project’s dynamics model. Note the half angle: a rotation by α enters q as α/2 (α is not the roll angle φ of the Euler section), so for a small rotation vector θ, q ≈ [1, θ/2].</p>
+        <p>A useful bridge <span class="tag tag-analogy" title="Analogy: a teaching bridge rather than course content.">Analogy</span>: in 2-D, a unit complex number \(e^{j\theta} = \cos\theta + j\sin\theta\) rotates a vector by θ when you multiply by it, and multiplying two of them adds their angles. Quaternions are the 3-D generalisation, with the extra price that order now matters. Complex numbers, the cross product, the skew matrix [ω×] and orthogonal matrices are typical content of a first engineering mathematics subject. Two more bridges <span class="tag tag-analogy" title="Analogy: a teaching bridge rather than course content.">Analogy</span>: deep learning notes teach rotary position embeddings, which rotate vectors by position-dependent angles, and those are exact 2-D rotations; electromechanics notes teach phasors as complex numbers, where multiplying two phasors multiplies their sizes and adds their angles, and the Lorentz force F = I l × B, a cross product of the same kind as ω × (Jω).</p>
+      </div>
+
+      <figure class="widget" id="w-quat" aria-labelledby="w-quat-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-quat-title">Quaternion builder</h3>
+          <p class="widget-try"><strong>Try:</strong> set the angle to 300°, then switch on “negate q”; in the Compose tab, compare \(A \otimes B\) with \(B \otimes A\). <strong>Notice:</strong> −q gives the same DCM and the same picture, the error angle always takes the short way (60°, not 300°), and swapping the order of two 90° turns changes the result by 120°.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-output" id="quat-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Scalar-first quaternions, active body → inertial; DCM C = Rᵀ maps inertial vectors into the body frame.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span> <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ error -->
+    <section id="error" aria-labelledby="error-title">
+      <h2 id="error-title">Attitude error and the shortest rotation</h2>
+      <div class="prose">
+        <p>The controller needs to know how far, and in which direction, the spacecraft is from its target. The <dfn data-term="error-quaternion">error quaternion</dfn> is the rotation that takes the target attitude to the current one:</p>
+        <div class="eq">\[ q_e = q_{ref}^* \otimes q, \qquad \theta_e = 2\,\mathrm{atan2}\big(\lVert q_{e,v} \rVert,\ q_{e0}\big) . \]</div>
+        <p>There is a catch. q and −q describe exactly the same attitude (the half angle means a full 360° turn takes q to −q). If q<sub>e0</sub> &lt; 0, the error quaternion describes the <em>long</em> way round, say 300° instead of 60°, and a controller fed with it would swing the spacecraft the long way. The fix is to flip the sign whenever q<sub>e0</sub> &lt; 0, which picks the <dfn data-term="shortest-rotation">shortest rotation</dfn>. The project’s risk register lists exactly this: “quaternion sign ambiguity causes large apparent error”, mitigated by forcing the shortest-rotation representation <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>. Try it with “negate q” in the builder above.</p>
+        <p>For small errors the vector part carries everything:</p>
+        <div class="eq">\[ q_e \approx \big[\,1,\ \tfrac{\theta}{2}\hat n\,\big] \quad\Rightarrow\quad \theta \approx 2\,q_{e,v} , \]</div>
+        <p>which is why the PID law acts on q<sub>e,v</sub> and the LQR law on 2q<sub>e,v</sub>. The angle formula uses atan2 rather than 2 acos(q<sub>e0</sub>) for a numerical reason: near zero error, q<sub>e0</sub> is almost exactly 1 and acos loses all its precision. In single precision, 2 acos(cos(θ/2)) returns 0 for every θ below about 4.8×10⁻⁴ rad, while the atan2 form stays accurate <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>.</p>
+        <p>Half-angle identities, atan2 and asin for angle extraction and small-angle approximations are typical content of a second engineering mathematics subject. Intelligent Systems notes teach the Markov property (the future depends only on the present state) and the difference between states and search nodes, where many nodes can hold one state. Applied here, (q, ω) is a Markov state for the rigid body, and q and −q are one state that a search keyed on raw quaternions would store as two nodes; the sign flip is the canonicalisation that merges them. Navigation keeps the same kind of books in 2-D, with true, magnetic and compass headings and the corrections between them: “where I am relative to where I want to be”, typical content of a navigation subject.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ DCM -->
+    <section id="dcm" aria-labelledby="dcm-title">
+      <h2 id="dcm-title">Quaternion → DCM</h2>
+      <div class="prose">
+        <p>For checking, plotting and transforming vectors, a 3 × 3 rotation matrix is often handier than a quaternion. The <dfn data-term="dcm">direction cosine matrix</dfn> that maps inertial vectors into the body frame (the project’s quat_to_dcm) is</p>
+        <div class="eq">\[ \begin{aligned} C &= \big(q_0^2 - q_v^\mathsf{T} q_v\big)\,I + 2\,q_v q_v^\mathsf{T} - 2\,q_0\,[q_v\times], \\ v_B &= C\,v_I, \qquad C^\mathsf{T} C = I, \quad \det C = +1 . \end{aligned} \]</div>
+        <p>Both q and −q give the same C, since every term is quadratic in q. The 3-2-1 Euler angles come straight out of its entries (C<sub>ij</sub> is row i, column j):</p>
+        <div class="eq">\[ \phi = \mathrm{atan2}(C_{23},\ C_{33}), \qquad \theta = -\arcsin C_{13}, \qquad \psi = \mathrm{atan2}(C_{12},\ C_{11}) . \]</div>
+        <p>Rotations act on tensors too. Expressed in axes rotated by C, the inertia tensor becomes</p>
+        <div class="eq">\[ J' = C\,J\,C^\mathsf{T} , \]</div>
+        <p>so a diagonal J only looks diagonal in its principal axes. This is the same transformation law as the stress tensor, σ′ = CσCᵀ, whose principal values are its eigenvalues; tensor transformation and Mohr’s circle, its 2-D picture, are typical content of a second mechanics of materials subject, and Mohr’s circle works for inertia too. Unsupervised learning notes teach principal component analysis as the eigendecomposition of a symmetric covariance matrix into orthogonal directions; J = R diag(J<sub>1</sub>, J<sub>2</sub>, J<sub>3</sub>) Rᵀ, with R a rotation matrix, has exactly that form.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ environment -->
+    <section id="environment" aria-labelledby="environment-title">
+      <h2 id="environment-title">Where the disturbance comes from</h2>
+      <div class="prose">
+        <p>The project models the space environment as a constant <dfn data-term="disturbance-torque">disturbance torque</dfn> of [2, −1, 1.5]×10⁻⁵ N m, with Monte Carlo trials sampling each axis within ±2×10⁻⁵ N m <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>. Is that realistic? Every environmental torque has the same form, a force applied away from the centre of mass:</p>
+        <div class="eq">\[ \tau = r \times F . \]</div>
+        <p>For a small spacecraft in low Earth orbit (LEO) four sources matter:</p>
+        <ul>
+          <li><strong>Aerodynamic drag.</strong> Even at 400 km there is a trace of atmosphere. \(F = \tfrac12 \rho v^2 C_D A\) with orbital speed \(v = \sqrt{\mu/(R_E + h)}\) and free-molecular drag coefficient C<sub>D</sub> ≈ 2.2, acting at a centre of pressure a few centimetres from the centre of mass. The density falls off roughly as \(\rho = \rho_0\, e^{-h/H}\), and space weather (solar activity) changes it by a factor of about 10.</li>
+          <li><strong>Gravity gradient.</strong> The near side of the body is pulled slightly harder than the far side. The largest torque is \(\tfrac{3\mu}{2r^3}\,|J_{max} - J_{min}|\).</li>
+          <li><strong>Solar radiation pressure.</strong> Sunlight carries momentum: about 1361/c ≈ 4.5 μPa, times (1 + reflectivity), times area, times the centre-of-pressure offset.</li>
+          <li><strong>Residual magnetic dipole.</strong> Current loops and ferromagnetic parts leave a small dipole m that Earth’s field B twists: \(\tau = m \times B\).</li>
+        </ul>
+        <p>Here are their sizes for this vehicle at 400 km, computed by the model in the widget below <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span> <span class="tag tag-illustrative" title="Illustrative: example hardware numbers, not project data.">Illustrative</span>:</p>
+      </div>
+      <div id="env-table"></div>
+      <div class="prose">
+        <p>The verdict: each source is roughly two to three and a half orders of magnitude below the project’s bound, so the bound is about 100 times conservative for typical sources at this altitude, and still about 50 times larger than all four added at their worst. That is a sensible design choice. A bound you can defend with margin is better than an accurate model nobody trusts, and it leaves room for things the list ignores, such as fuel slosh or wheel friction. Note also that, unlike an aircraft, an orbiting spacecraft has no natural aerodynamic damping or stiffness: nothing pushes it back, which is why active control is needed at all.</p>
+        <p>Every one of these is a statics problem at heart (forces, couples and lever arms set by the centre of mass), typical content of an engineering statics subject. The vertical structure of the atmosphere up to the thermosphere, and the hydrostatic balance behind its exponential fall-off, are typical content of an atmospheric science subject. Lift, drag and the pitching moment are typical content of a first aerodynamics subject, and the drag equation F = ½ρv²C<sub>D</sub>A with the centre of pressure is typical content of a fluid mechanics subject. Both work with a continuous fluid; in orbit the flow is free-molecular, so the same equation is used with a free-molecular C<sub>D</sub>. Fuel slosh, a fluid effect outside this project, would break the rigid-body assumption. Magnetic properties of materials, typical content of an engineering materials subject, explain why ferromagnetic parts leave a residual dipole. Finally, the Coriolis effect on wind, typical content of an aviation meteorology subject, comes from the term 2Ω × v, the same rotating-frame operator as ω × Jω <span class="tag tag-analogy" title="Analogy: a teaching bridge rather than course content.">Analogy</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-env" aria-labelledby="w-env-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-env-title">Disturbance-torque estimator</h3>
+          <p class="widget-try"><strong>Try:</strong> drop to 300 km with high solar activity and a 5 cm offset. <strong>Notice:</strong> drag climbs by more than an order of magnitude and becomes the largest source, yet the total still sits below the project’s 2×10⁻⁵ N m bound.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls" id="env-controls"></div>
+          <div class="widget-output" id="env-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Order-of-magnitude models: exponential atmosphere (ρ = 3×10⁻¹² kg/m³ at 400 km, scale height 60 km), dipole field 3.0×10⁻⁵ T at the surface, drag area 0.03 m², C<sub>D</sub> 2.2, sunlit area 0.06 m², reflectivity 0.6. Each torque is its worst-case alignment; the “Project bound” bar marks 2×10⁻⁵ N m.</p>
+          <span class="tags"><span class="tag tag-illustrative" title="Illustrative: example hardware numbers, not project data.">Illustrative</span> <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span> <span class="tag tag-project" title="Project: stated in the project notes.">Project</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <div class="prose in-short">
+      <h2 id="in-short-title">In short</h2>
+      <p>The spacecraft is a rigid body with a diagonal J, so Euler’s equation \(J\dot\omega + \omega \times J\omega = \tau\) governs its rates and the quaternion kinematics \(\dot q = \tfrac12\, q \otimes [0, \omega]\) govern its attitude. The gyroscopic term couples the axes, does no work and makes spin about x, the intermediate axis, unstable. Quaternions avoid gimbal lock, combine with a non-commutative product and need a sign flip to give the shortest error rotation. Real environmental torques in LEO are around 10⁻⁷ N m, so the project’s 2×10⁻⁵ N m bound is deliberately conservative.</p>
+    </div>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

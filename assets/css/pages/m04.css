@@ -1,0 +1,28 @@
+/*
+ * m04.css: Module 04, numerical integration (package P4).
+ * Everything is scoped under body[data-page="m04"]; shared components keep their own styles.
+ */
+
+body[data-page="m04"] .in-short {
+  max-width: 72ch;
+  margin-block: var(--s6) var(--s4);
+  padding-inline-start: var(--s3);
+  border-inline-start: 3px solid var(--accent);
+}
+
+/* plots sit in the widget output with breathing room between them */
+body[data-page="m04"] .widget-output > .plot,
+body[data-page="m04"] .widget-output > div > .plot,
+body[data-page="m04"] .widget-output > .grid-2 { margin-block-end: var(--s4); }
+body[data-page="m04"] .widget-output > .scroll-x { margin-block-end: var(--s3); }
+body[data-page="m04"] .widget-output > .status-line { margin-block-end: var(--s3); }
+
+/* W4.3: verdict badge followed by text */
+body[data-page="m04"] .w43-verdict { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); color: var(--text); }
+
+/* W4.4: the two panels */
+body[data-page="m04"] .w44-h { margin-block: var(--s5) var(--s2); font-size: var(--fs-base); }
+body[data-page="m04"] .w44-h:first-child { margin-block-start: 0; }
+
+/* W4.2: the embedded question */
+body[data-page="m04"] .w42-quiz { margin-block-start: var(--s4); }

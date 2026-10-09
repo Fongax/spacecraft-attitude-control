@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulator · Attitude Control: The Big Picture</title>
+<meta name="description" content="Run the spacecraft attitude-control loop in your browser: 3D playback, safe-mode annunciator, requirement checks, plots, a Monte Carlo campaign and shareable scenario links.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/simulator.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/vendor/three.min.js"></script>
+<script defer src="assets/vendor/OrbitControls.js"></script>
+<script defer src="assets/js/pages/simulator-3d.js"></script>
+<script defer src="assets/js/pages/simulator-mc.js"></script>
+<script defer src="assets/js/pages/simulator.js"></script>
+</head>
+<body data-page="simulator">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container">
+    <header class="sim-hero">
+      <h1>The attitude-control simulator</h1>
+      <p class="lede">Set an upset, choose a controller and watch the closed loop work: the safe-mode logic detumbles the spacecraft, holds it, then hands it back to precise pointing. Every run is checked against the project’s five requirements.</p>
+      <noscript>
+        <div class="callout warn" role="note"><div class="callout-content"><p class="callout-title">This page needs JavaScript</p><p>The simulator, its plots and the Monte Carlo runner all run in your browser. Turn JavaScript on, or read the <a href="learn.html">learning path</a>, which explains the same loop step by step.</p></div></div>
+      </noscript>
+      <ol class="sim-steps" aria-label="How to use the simulator">
+        <li><strong>Pick a scenario.</strong> T03 loads first: a fast tumble that trips safe mode, then a temporary fault.</li>
+        <li><strong>Play or drag the time bar.</strong> The 3D view, the annunciator and every plot cursor follow the same time.</li>
+        <li><strong>Change any input.</strong> The run repeats as soon as you stop; <strong>Copy scenario link</strong> shares exactly what you see.</li>
+      </ol>
+    </header>
+  </div>
+
+  <div class="container sim-container">
+    <div id="sim" class="sim-layout" role="region" aria-label="Simulator">
+      <div class="sim-area sim-area-panel" id="sim-panel">
+        <h2 class="sim-panel-title" id="sim-panel-title">Scenario controls</h2>
+        <div class="sim-actions" id="sim-actions" role="group" aria-label="Run actions"></div>
+        <div class="sim-groups" id="sim-groups"></div>
+      </div>
+
+      <div class="sim-area sim-area-view" id="sim-view-area">
+        <h2 class="visually-hidden" id="sim-view-title">3D view and playback</h2>
+        <div class="sim-view" id="sim-view"></div>
+      </div>
+
+      <div class="sim-area sim-area-time" id="sim-time-area">
+        <div class="sim-timebar" id="sim-timebar" role="group" aria-label="Playback"></div>
+        <div id="sim-run-error"></div>
+        <div class="sim-run-row">
+          <p class="status-line sim-run-status" id="sim-run-status"></p>
+          <div class="btn-row sim-run-actions" id="sim-run-actions" role="group" aria-label="This run"></div>
+        </div>
+        <p class="status-line sim-action-status" id="sim-action-status" aria-live="polite"></p>
+      </div>
+
+      <div class="sim-area sim-area-ann" id="sim-ann-area">
+        <h2 class="sim-sub" id="sim-ann-title">Mode annunciator</h2>
+        <div id="sim-ann"></div>
+      </div>
+
+      <div class="sim-area sim-area-reqs" id="sim-req-area">
+        <h2 class="sim-sub" id="sim-req-title">Requirement checks for this run</h2>
+        <p class="sim-sub-note muted">Select a badge to read the requirement, the check used and how it is verified.</p>
+        <div id="sim-reqs"></div>
+      </div>
+
+      <div class="sim-area sim-area-plots" id="sim-plots-area">
+        <h2 class="sim-sub" id="sim-plots-title">Plots</h2>
+        <p class="sim-sub-note muted">All plots share the time axis. Select a plot to move the time cursor there; with a plot focused, <kbd>←</kbd> and <kbd>→</kbd> move the cursor.</p>
+        <div class="sim-plots" id="sim-plots"></div>
+      </div>
+
+      <div class="sim-area sim-area-metrics" id="sim-metrics-area">
+        <h2 class="sim-sub" id="sim-metrics-title">Run metrics</h2>
+        <div class="sim-metrics-grid">
+          <div id="sim-metrics"></div>
+          <div id="sim-compare" hidden></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <section id="mc" class="sim-section mc-section" aria-labelledby="mc-title">
+      <h2 id="mc-title">Monte Carlo campaign</h2>
+      <div class="prose">
+        <p>One run tests one upset. REQ-L1 is a statement about <em>many</em> upsets: “The system shall reach the detumble threshold within 60 seconds for at least 95% of Monte Carlo trials.” <span class="tag tag-project" title="Project: stated in the project notes.">Project</span> The campaign below draws each trial’s initial attitude, body rates and disturbance from a seeded random generator, runs the full loop with safe mode on, and counts the passes. The same seed always gives the same trials.</p>
+      </div>
+      <div id="mc-panel"></div>
+    </section>
+
+    <section id="experiments" class="sim-section" aria-labelledby="experiments-title">
+      <h2 id="experiments-title">Experiments to try</h2>
+      <div class="prose">
+        <p>Each card loads a scenario into the simulator above. The numbers in the cards are computed by the same engine when this page opens, so they always match what you will see <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>. Use <strong>Pin run</strong> to keep one result as faint dashed traces while you load the next.</p>
+      </div>
+      <div class="sim-exp-grid" id="sim-experiments"></div>
+    </section>
+
+    <section id="model" class="sim-section" aria-labelledby="model-title">
+      <h2 id="model-title">What one run computes</h2>
+      <div class="prose">
+        <p>A run is a loop over time steps of \(\Delta t = 0.01\) s <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span>: 12,001 samples for 120 s. Each step does the same six things, in this order. The engine works in SI units (rad, rad/s, N m); the page converts to degrees, deg/s and mN m only for display.</p>
+
+        <h3 id="model-errors">1. Measure the error</h3>
+        <p>The attitude \(q\) is a unit quaternion, scalar first, that rotates body vectors into the inertial frame. The error relative to the target \(q_{ref}\) is another quaternion, and its angle is computed with <code>atan2</code>, which stays accurate at tiny angles where <code>acos</code> loses precision:</p>
+        <div class="eq">\[ q_e = q_{ref}^{*}\otimes q \;(\text{negated if } q_{e0}<0), \qquad \theta = 2\,\operatorname{atan2}\!\bigl(\lVert q_{e,v}\rVert,\; q_{e0}\bigr) \]</div>
+        <p>Worked number: the T01 start (roll 25°, pitch −15°, yaw 20°, applied yaw first) is the quaternion <span class="mono" data-fill="t01q">…</span>, which is <span data-fill="t01ang">…</span> from the target <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>. That angle is the “from target” readout under the attitude sliders.</p>
+
+        <h3 id="model-modes">2. Run the mode logic</h3>
+        <p>The mode manager compares the rate \(\lVert\omega\rVert\), the error \(\theta\) and the fault flag with the project’s thresholds <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>. All timers count whole steps, so “0.5 s” is exactly 50 steps at \(\Delta t = 0.01\) s:</p>
+        <div class="eq">\[ \begin{aligned} \text{NOMINAL}\to\text{SAFE\_DETUMBLE}&: \ \lVert\omega\rVert > 6^\circ/\text{s} \ \text{ or fault for } 0.5\ \text{s} \\ \text{SAFE\_DETUMBLE}\to\text{SAFE\_HOLD}&: \ \lVert\omega\rVert < 0.5^\circ/\text{s} \ \text{held for } 2\ \text{s} \\ \text{SAFE\_HOLD}\to\text{NOMINAL}&: \ \text{fault clear},\ \lVert\omega\rVert<0.5^\circ/\text{s}, \\ &\phantom{:}\ \ \theta<4^\circ,\ \text{dwell}\ge 8\ \text{s} \end{aligned} \]</div>
+        <p>There is deliberately no path from SAFE_DETUMBLE straight back to NOMINAL, and none from NOMINAL straight to SAFE_HOLD. The annunciator above shows the guard lamps for whichever mode the cursor is in.</p>
+
+        <h3 id="model-control">3. Compute the torque the mode asks for</h3>
+        <p>NOMINAL uses the selected controller; SAFE_DETUMBLE only damps the rate; SAFE_HOLD points gently with low gains:</p>
+        <div class="eq">\[ \begin{aligned} \tau_{PID} &= -K_p\,q_{e,v} - K_d\,\omega - K_i\!\int q_{e,v}\,dt, & \tau_{LQR} &= -K\begin{bmatrix}2q_{e,v}\\ \omega\end{bmatrix}, \\ \tau_{SD} &= -K_{d}^{SD}\,\omega, & \tau_{SH} &= -K_{p}^{SH} q_{e,v} - K_{d}^{SH}\,\omega \end{aligned} \]</div>
+        <p>The units follow from the inputs: \(q_{e,v}\) is dimensionless, so \(K_p\) is in N m, \(K_d\) in N m s/rad and \(K_i\) in N m/s. For small errors \(q_{e,v}\approx\theta/2\), so the PID behaves like a spring of stiffness \(K_p/2\) per radian. On the y axis (\(J_y = 0.040\ \text{kg m}^2\)) with the site gains that gives</p>
+        <div class="eq" data-tex="pid">\[ \omega_n = \sqrt{\frac{K_p/2}{J_y}}, \qquad \zeta = \frac{K_d}{2\sqrt{(K_p/2)\,J_y}} \]</div>
+        <p>so the PID is heavily overdamped, which is why T01 settles smoothly but slowly <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>. The LQR gains come from the project’s weights \(Q = \operatorname{diag}(2,2,2,0.15,0.15,0.15)\) and \(R = 2000\,I\) <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>, which give \(K_\theta = \sqrt{q_\theta/r}\) = <span data-fill="lqrk">…</span> N m/rad on every axis <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>.</p>
+
+        <h3 id="model-actuator">4. Limit the torque to what the wheels can give</h3>
+        <div class="eq">\[ \tau_i = \min\bigl(\max(\tau_{cmd,i},\,-\tau_{max}),\ \tau_{max}\bigr), \qquad \tau_{max} = 3\ \text{mN m} \]</div>
+        <p>Worked number: at the T01 start the PID demands \(-K_p\,q_{e,v} = \) <span class="mono" data-fill="t01tau">…</span> mN m, so the x and z wheels saturate for the first moments. The REQ-S2 badge reports both the delivered peak (3.00 mN m) and the demand. With the LQR, the attitude term alone reaches the limit at \(\theta = \tau_{max}/K_\theta = \) <span data-fill="satang">…</span> <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>, so a 37° slew runs at full torque and builds up rate.</p>
+
+        <h3 id="model-dynamics">5. Advance the physics one step</h3>
+        <p>The torque is held constant over the step (zero-order hold, as a flight computer would apply it) and the rigid-body equations are integrated with fourth-order Runge–Kutta, then \(q\) is renormalised <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>:</p>
+        <div class="eq">\[ J\dot\omega + \omega\times(J\omega) = \tau + \tau_d, \qquad \dot q = \tfrac12\, q\otimes\begin{bmatrix}0\\ \omega\end{bmatrix} \]</div>
+        <p class="eq-note">with \(J = \operatorname{diag}(0.035,\ 0.040,\ 0.025)\ \text{kg m}^2\) <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>, diagonal because the body axes are principal axes.</p>
+        <p>The term \(\omega\times(J\omega)\) couples the axes: it is why a spin about the intermediate axis x is unstable (try SPINX). It moves rate from one axis to another but does no work, because \(\omega\cdot(\omega\times J\omega)=0\). The rotational kinetic energy \(T=\tfrac12\,\omega^{\mathsf T}J\omega\) therefore changes only through the applied torques, \(\dot T=\omega\cdot(\tau+\tau_d)\), so the detumble law \(\tau=-K_d\,\omega\) removes energy at the rate \(K_d\lVert\omega\rVert^2\) whatever the coupling does. While a wheel is clipped at 3 mN m, each product \(\omega_i\tau_i\) is still negative, so the energy keeps falling, only more slowly. Worked number: T03 starts with \(T = \) <span data-fill="t03energy">…</span>, and safe mode removes more than 99% of it in the first 2 s <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>.</p>
+        <p>The disturbance \(\tau_d = [2,\,-1,\,1.5]\times10^{-5}\) N m <span class="tag tag-project" title="Project: stated in the project notes.">Project</span> is about 150 times smaller than \(\tau_{max}\), so it only shows near the target, where the PID’s integral term cancels it.</p>
+
+        <h3 id="model-checks">6. Log the step, then check the requirements</h3>
+        <p>Every step is logged: time, \(q\), \(\omega\), commanded and delivered torque, errors, mode, fault flag and the three timers. After the run, the requirement checks read only the log. Settling time is the first time after which the error stays below 2° and the rate below 0.5 deg/s to the end; the effort is \(\int \lVert\tau\rVert^2\,dt\) by the trapezoid rule, in N² m² s. The plots, the 3D view and the CSV are all views of that same log.</p>
+      </div>
+    </section>
+
+    <section id="behind" class="sim-section" aria-labelledby="behind-title">
+      <h2 id="behind-title">Which project part each panel rebuilds</h2>
+      <div class="prose">
+        <p>Every panel of this page is a piece of the project, and each piece draws on a group of subjects. The table counts the subject links recorded for each part and names its strong links: all of them rate the same, so it lists the first three in alphabetical order with the idea each one supplies, then says how many more there are. Follow a module link for the full story and its “Where this came from” box, which lists every link.</p>
+      </div>
+      <div id="sim-behind"></div>
+    </section>
+
+    <section id="check" class="sim-section" aria-labelledby="check-title">
+      <h2 id="check-title">Check your reading of the simulator</h2>
+      <div class="prose"><p>Predict first, then check. Each answer can be confirmed with the presets above.</p></div>
+      <div id="sim-quiz"></div>
+    </section>
+
+    <section id="numbers" class="sim-section" aria-labelledby="numbers-title">
+      <h2 id="numbers-title">Where the numbers come from</h2>
+      <div class="prose">
+        <p>The original project shipped an interactive interface that set the initial roll, pitch and yaw, the initial body rates, the controller (PID or LQR), the duration, safe mode, a fault window and the playback speed, then ran the simulation, played a 3D animation and saved a CSV <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>. This page rebuilds that interface, adds the gains, the disturbance, the actuator and integrator options, and brings the project’s Monte Carlo campaign into the same page. The sensor and estimator model goes beyond what the project had <span class="tag tag-extension" title="Extension: beyond the original project scope.">Extension</span>.</p>
+        <p>Every default in the controls carries a label. <strong>Project</strong> values are stated in the project notes; <strong>Derived</strong> values are computed from them; <strong>Site default</strong> and <strong>Site option</strong> are this site’s choices where the notes give no value; <strong>Extension</strong> marks what goes beyond the original scope. The full list:</p>
+      </div>
+      <div id="sim-legend"></div>
+      <div id="sim-provenance"></div>
+    </section>
+  </div>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

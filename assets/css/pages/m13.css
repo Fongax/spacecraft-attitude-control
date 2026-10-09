@@ -1,0 +1,51 @@
+/*
+ * m13.css: Module 13, operations, human factors and safety culture (package P6).
+ * Everything is scoped under body[data-page="m13"]; shared components keep their own styles.
+ */
+
+body[data-page="m13"] .in-short {
+  max-width: 72ch;
+  margin-block: var(--s6) var(--s4);
+  padding-inline-start: var(--s3);
+  border-inline-start: 3px solid var(--accent);
+}
+body[data-page="m13"] .widget-output > div > .plot,
+body[data-page="m13"] .widget-output > .grid-2 { margin-block-end: var(--s3); }
+body[data-page="m13"] .m13-sum, body[data-page="m13"] .m13-level { color: var(--text); font-weight: 600; margin-block-end: var(--s2); }
+
+/* W13.1 Swiss cheese */
+body[data-page="m13"] .m13-swiss-wrap { margin-block: var(--s2) var(--s3); }
+body[data-page="m13"] .m13-swiss { display: block; width: 100%; min-width: 620px; height: auto; background: var(--plot-bg); border: 1px solid var(--border); border-radius: var(--r1); }
+body[data-page="m13"] .m13-slice rect { fill: var(--warn-bg); stroke: var(--warn); stroke-width: 1.5; }
+body[data-page="m13"] .m13-slice .m13-hole { fill: var(--plot-bg); stroke: var(--warn); stroke-width: 1; }
+body[data-page="m13"] .m13-slice.off rect { fill: none; stroke: var(--border-strong); stroke-dasharray: 4 4; }
+body[data-page="m13"] .m13-slice.off .m13-hole { display: none; }
+body[data-page="m13"] .m13-slice-lab { fill: var(--text); font: 700 12px var(--font-sans); text-anchor: middle; }
+body[data-page="m13"] .m13-slice-sub { fill: var(--text-2); font: 10px var(--font-sans); text-anchor: middle; }
+body[data-page="m13"] .m13-haz { fill: var(--text); font: 600 12px var(--font-sans); }
+body[data-page="m13"] .m13-swiss.is-compact { min-width: 0; }
+body[data-page="m13"] .m13-swiss.is-compact .m13-haz,
+body[data-page="m13"] .m13-swiss.is-compact .m13-through-lab { paint-order: stroke; stroke: var(--plot-bg); stroke-width: 4px; stroke-linejoin: round; }
+body[data-page="m13"] .m13-arrow { fill: none; stroke-width: 3; stroke-linecap: round; }
+body[data-page="m13"] .m13-arrow.stopped { stroke: var(--ok); }
+body[data-page="m13"] .m13-arrow.through { stroke: var(--bad); stroke-dasharray: 9 5; animation: m13-flow 1.2s linear infinite; }
+body[data-page="m13"] .m13-head-through { fill: var(--bad); }
+body[data-page="m13"] .m13-head-stop { fill: var(--ok); }
+body[data-page="m13"] .m13-through-lab { fill: var(--bad); font: 700 11px var(--font-sans); text-anchor: end; }
+@keyframes m13-flow { to { stroke-dashoffset: -28; } }
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="m13"] .m13-arrow.through { animation: none; }
+}
+
+/* W13.4 reboot */
+body[data-page="m13"] .m13-verdict { margin-block-end: var(--s3); }
+body[data-page="m13"] .m13-verdict .callout { margin: 0; }
+
+/* LOCAL (request P0): let a quiz option wrap its "Correct answer" mark onto a new line, so an
+   option with a long unbreakable word (SAFE_DETUMBLE) cannot widen the page at 360px. */
+body[data-page="m13"] .quiz-option { flex-wrap: wrap; }
+body[data-page="m13"] .quiz-option .quiz-text { flex: 1 1 10em; min-width: 0; }
+
+/* W13.5 confusion matrix: the count, with what it means on a second line */
+body[data-page="m13"] .m13-cm { display: inline-flex; flex-direction: column; align-items: flex-end; }
+body[data-page="m13"] .m13-cm-what { font-family: var(--font-sans); font-size: var(--fs-xs); color: var(--text-2); }

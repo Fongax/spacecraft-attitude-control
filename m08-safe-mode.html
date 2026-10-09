@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 Safe-mode logic and formal reasoning · Attitude Control: The Big Picture</title>
+<meta name="description" content="Specify the three-mode safe-mode machine exactly, then check its guards, hysteresis and forbidden transitions with formal reasoning.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m08.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m08.js"></script>
+</head>
+<body data-page="m08">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 08</span>
+      <h1>Safe-mode logic and formal reasoning</h1>
+      <p class="module-purpose">Pin the three-mode safe-mode machine down exactly, then use logic, automata and exhaustive search to show its forbidden transitions can never happen, and find the one case the specification forgot.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Protect</span>
+        <span>About 35 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ why -->
+    <section id="why" aria-labelledby="why-title">
+      <h2 id="why-title">Why a safe mode</h2>
+      <div class="prose">
+        <p>Every control law in <a href="m05-control.html">module 05</a> assumes the craft is roughly where it should be, turning slowly, with working hardware. When that assumption breaks (a tumble after separation, a stuck wheel, a software fault), the nominal controller can make things worse: an attitude controller fighting a fast tumble saturates every wheel and may never converge. The answer is a <dfn data-term="safe-mode">safe mode</dfn>: a rehearsed, conservative state, entered on a defined trigger, whose only job is to bring the vehicle back to a condition from which normal operations can resume. The project's ordering is the classic one: stabilise the rates first, then the attitude <span class="tag tag-project">Project</span>.</p>
+        <p>Aviation is full of the same pattern, and each case below is typical content of the matching subject <span class="tag tag-typical">Typical content</span>:</p>
+        <ul>
+          <li><strong>Autorotation.</strong> When a helicopter's engine fails, the pilot enters a rehearsed state that trades height for rotor speed. The trigger is defined and the entry is drilled until it is automatic (rotary-wing operations).</li>
+          <li><strong>V1 and the point of no return.</strong> Decision thresholds computed in advance turn a continuous, stressful situation into a discrete decision (aircraft performance and planning).</li>
+          <li><strong>Drone failsafes.</strong> Losing the command link starts a timer; when it expires the aircraft climbs and returns home, and hysteresis stops a flickering link from toggling the behaviour (remotely piloted aircraft systems).</li>
+          <li><strong>Partial-panel flying.</strong> After a vacuum-pump or gyro failure the pilot flies on the remaining, most robust instruments (light aircraft systems). SAFE_DETUMBLE does the same: it uses only the rate, the most robust signal, and the simplest possible law.</li>
+        </ul>
+        <p>Safety management draws this as a bow-tie around the top event "loss of attitude control": preventive barriers on the left (conservative gains, saturation-aware design, verified software) and recovery barriers on the right (safe-mode entry, detumble, hold) <span class="tag tag-typical">Typical content</span>. A security team's incident response has the same shape: detect, contain, and recover only when recovery is verified <span class="tag tag-typical">Typical content</span>.</p>
+        <p>What makes a safe mode trustworthy is that it is <em>exactly</em> specified. The rest of this module treats the project's three-mode machine as a formal object: a set of states, a transition relation, guards that are logical predicates, timers that are integer counters, and invariants that can be proved rather than merely tested.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ modes -->
+    <section id="modes" aria-labelledby="modes-title">
+      <h2 id="modes-title">The three modes</h2>
+      <div class="prose">
+        <p>The project defines three modes <span class="tag tag-project">Project</span>. Their control laws come from module 05; the gain values are this site's <span class="tag tag-site">Site default</span>.</p>
+      </div>
+      <div class="scroll-x" tabindex="0" role="region" aria-label="Mode table">
+        <table class="table m08-modes">
+          <caption>Modes, their jobs and their control laws</caption>
+          <thead>
+            <tr><th scope="col">Mode</th><th scope="col">Job</th><th scope="col">Control law</th><th scope="col">Site gains</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row"><span class="mode-pill n">NOMINAL</span></th><td>Track the target attitude.</td><td>PID or LQR on the error quaternion</td><td>see <a href="m05-control.html#pid">module 05</a></td></tr>
+            <tr><th scope="row"><span class="mode-pill sd">SAFE_DETUMBLE</span></th><td>Remove the rate; ignore pointing.</td><td>\(\tau=-K_d\,\omega\)</td><td>\(K_d=\)<span class="calc" data-calc="detumble">0.05</span> N m s/rad</td></tr>
+            <tr><th scope="row"><span class="mode-pill sh">SAFE_HOLD</span></th><td>Hold a coarse attitude; block an early return until the fault clears and the craft has been stable for a dwell time.</td><td>\(\tau=-K_p\,q_{e,v}-K_d\,\omega\) (low-gain PD toward \(q_{ref}\))</td><td>\(K_p=\)<span class="calc" data-calc="hold-kp">0.01</span> N m (per unit of quaternion error), \(K_d=\)<span class="calc" data-calc="hold-kd">0.07</span> N m s/rad</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>Two design choices stand out. SAFE_DETUMBLE ignores attitude entirely: it is the rate-damping law whose energy can only fall, whatever the attitude, so it is the safest possible thing to do when nothing else can be trusted. SAFE_HOLD adds a weak attitude term so the craft drifts back toward the target, with low gains to keep torques small and the loop gentle. And the PID integrator runs only in NOMINAL, so a long safe-mode episode cannot wind it up <span class="tag tag-project">Project</span>.</p>
+        <p>Formally the modes are an enumerated set \(M=\{N,\ SD,\ SH\}\). The machine's state, though, is more than the mode: three integer counters (fault time, time below the exit rate, dwell time) carry the history the guards need. Mode plus counters makes it an <em>extended</em> finite-state machine, the same structure <a href="m02-architecture.html">module 02</a> drew as a diagram. The Intelligent Systems notes make the point that matters here: anything not tracked in the state is invisible to every algorithm that runs on it, so without the timers no logic, however clever, could implement hysteresis or dwell.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ guards -->
+    <section id="guards" aria-labelledby="guards-title">
+      <h2 id="guards-title">Guards, timers and the transition table</h2>
+      <div class="prose">
+        <p>A <dfn data-term="guard">guard</dfn> is a predicate that must be true for a transition to fire. The project's three guards are <span class="tag tag-project">Project</span>:</p>
+        <div class="eq">\[ \begin{aligned} N\to SD\colon\quad & \lVert\omega\rVert>6^\circ/\text{s}\\ \lor\ \ & t_{\text{fault}}\ge0.5\ \text{s} \end{aligned} \]</div>
+        <div class="eq">\[ \begin{aligned} SD\to SH\colon\quad & \lVert\omega\rVert<0.5^\circ/\text{s}\\ & \text{continuously for } 2\ \text{s} \end{aligned} \]</div>
+        <div class="eq">\[ \begin{aligned} SH\to N\colon\quad & \lnot\text{fault}\ \land\ \lVert\omega\rVert<0.5^\circ/\text{s}\\ \land\ \ & e&lt;4^\circ\ \land\ t_{\text{dwell}}\ge8\ \text{s} \end{aligned} \]</div>
+        <p>The return guard is a conjunction, so "stay in SAFE_HOLD" is its negation, and De Morgan's law turns that into a disjunction: any one reason is enough to stay.</p>
+        <div class="eq">\[ \begin{aligned} \lnot G_{SH\to N}=\ & \text{fault}\ \lor\ \lVert\omega\rVert\ge0.5^\circ/\text{s}\\ \lor\ \ & e\ge4^\circ\ \lor\ t_{\text{dwell}}&lt;8\ \text{s} \end{aligned} \]</div>
+        <p>Writing the stay condition with "and" instead of "or" is the classic mistake when inverting an <code>if</code>, as the Data Structures notes warn. Sets, relations, predicates and De Morgan's laws are typical content of a discrete structures subject <span class="tag tag-typical">Typical content</span>, and the return guard reads like a checklist in which every item must be ticked; checklists and memory items are typical content of a flight procedures subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The timers are integer step counters, never accumulated floating-point time. At dt = 0.01 s they count to <span class="calc" data-calc="counters">50, 200 and 800 steps</span> <span class="tag tag-derived">Derived</span>. The fault counter resets whenever the fault clears, the "below" counter resets on any sample at or above 0.5 deg/s, and the dwell counter starts from zero on entry to SAFE_HOLD. Adding 0.01 to a float until it reaches 8 takes 801 steps, not 800, because 0.01 has no exact binary representation; the counter is exact. Exact definitions matter in hardware too: the Design of Machine Elements notes define bearing failure by a measured spall area, not by "when it feels rough".</p>
+      </div>
+
+      <figure class="widget" id="w-state-machine" aria-labelledby="w-state-machine-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-state-machine-title">Live state machine</h3>
+          <p class="widget-try"><strong>Try:</strong> start the clock, push |ω| above 6 deg/s, then drop it to 0.2 and wait; set the error under 4° and wait again. Then switch the fault on, and in SAFE_DETUMBLE press "Force → NOMINAL". <strong>Notice:</strong> the progress bars fill exactly 0.5, 2 and 8 s; one sample above 0.5 deg/s resets the 2 s hold; the forced shortcut is refused with the reason.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>The machine is <code>ADCS.modes.createMachine(ADCS.params.DEFAULTS.safeMode, 0.01)</code>, the same code the simulator runs. Each clock tick takes 100 steps of 0.01 s every 100 ms of wall time: ten times real time.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ hysteresis -->
+    <section id="hysteresis" aria-labelledby="hysteresis-title">
+      <h2 id="hysteresis-title">Hysteresis and anti-flapping</h2>
+      <div class="prose">
+        <p>Imagine a single threshold: enter safe mode above 0.5 deg/s, leave below it. A rate hovering near 0.5 deg/s with a little noise would cross the line many times a second, and the craft would switch controllers each time. That is <dfn data-term="mode-flapping">mode flapping</dfn>, and the project's risk register lists it with a high impact, mitigated by "hysteresis thresholds and minimum dwell times" <span class="tag tag-project">Project</span>.</p>
+        <p>The project uses two defences. The first is a <dfn data-term="hysteresis">differential gap</dfn>: enter at 6 deg/s, but leave only below 0.5 deg/s. The second is persistence: the exit condition must hold continuously for 2 s, and the return needs 8 s of dwell. A comparator with a gap is a Schmitt trigger, and the project's logic is a Schmitt trigger with timers. The Electromechanics notes teach exactly this for ON-OFF control: a single threshold chatters under noise, and a differential gap switches off at one level and on at another, trading fewer switches for a wider band. In the terms of the Data Structures notes, the 2 s hold is a sliding-window maximum query, answered in O(1) by a counter that resets on any violation, or by their monotonic deque when the window's peak is wanted for telemetry.</p>
+        <p>The timers give a provable bound, the <strong>anti-flapping lemma</strong>: once the craft leaves NOMINAL it cannot re-enter NOMINAL for at least</p>
+        <div class="eq">\[ t_{\text{exit hold}}+t_{\text{dwell}}=2\ \text{s}+8\ \text{s}=10\ \text{s} \]</div>
+        <p>because SAFE_HOLD can only be entered after 200 consecutive low-rate steps in SAFE_DETUMBLE, and NOMINAL only after 800 dwell steps in SAFE_HOLD, with each counter starting from zero on entry <span class="tag tag-derived">Derived</span>. So there are at most six safe-mode entries in any minute, however the inputs behave.</p>
+        <p>The gap and the timers are a trade-off, not free safety. A wider gap or a longer hold means fewer flaps but slower recovery: lowering the exit rate lengthens every detumble, which eats into REQ-L1's 60 s, and a longer dwell delays the return to fine pointing. In the failure vocabulary of the Systems Programming notes, flapping is livelock-like: a liveness failure in which the system keeps moving without making progress. And the structure is not arbitrary. Model mode switching as a small Markov decision process, solved by the value iteration of the Intelligent Systems notes, charge a cost for each switch, and the optimal policy acquires different thresholds for entering and leaving a mode: hysteresis is what an optimal policy looks like when switching costs something.</p>
+      </div>
+
+      <figure class="widget" id="w-hysteresis" aria-labelledby="w-hysteresis-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-hysteresis-title">Hysteresis vs chatter</h3>
+          <p class="widget-try"><strong>Try:</strong> set the mean near 0.5 deg/s and raise the noise from zero. <strong>Notice:</strong> the single threshold switches many times a minute; the project's 2 s hold cuts that sharply; adding a release margin all but stops it, at the price of declaring "quiet" later.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Synthetic |ω| = mean + slow drift (0.2 deg/s amplitude, 60 s period) + noise σ·n, sampled every 0.05 s, with n from a seeded <code>ADCS.rng</code> stream low-passed over 0.3 s. Each detector decides "quiet" (rate low) or not; a switch is any change of that decision.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-option">Site option</span><span class="tag tag-illustrative">Illustrative</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ forbidden -->
+    <section id="forbidden" aria-labelledby="forbidden-title">
+      <h2 id="forbidden-title">Forbidden transitions as invariants</h2>
+      <div class="prose">
+        <p>The project forbids three moves <span class="tag tag-project">Project</span>: SAFE_DETUMBLE → NOMINAL ("detumbling should pass through safe hold first"), NOMINAL → SAFE_HOLD ("safe hold should only occur after the detumble phase"), and returning to NOMINAL while the fault flag is active. Each is a <dfn data-term="safety-property">safety property</dfn>, a statement that something bad never happens, and temporal logic writes them with \(\mathbf G\) ("globally, at every step") and \(\mathbf X\) ("at the next step"):</p>
+        <div class="eq">\[ \mathbf G\,\big(\text{mode}=SD\ \Rightarrow\ \mathbf X\,\text{mode}\ne N\big) \]</div>
+        <div class="eq">\[ \mathbf G\,\big(\text{mode}=N\ \Rightarrow\ \mathbf X\,\text{mode}\ne SH\big) \]</div>
+        <div class="eq">\[ \mathbf G\,\big((\text{mode}=SH\land\text{fault})\ \Rightarrow\ \mathbf X\,\text{mode}\ne N\big) \]</div>
+        <p>The first two are structural, so they live in the transition relation itself. As a boolean adjacency matrix (rows "from", columns "to", in the order N, SD, SH), the forbidden pairs are the zeros off the diagonal:</p>
+        <div class="eq">\[ A=\begin{bmatrix}1&amp;1&amp;0\\0&amp;1&amp;1\\1&amp;0&amp;1\end{bmatrix} \]</div>
+        <p>The machine checks <code>A[from][to]</code> before committing any change. Adjacency matrices and breadth-first search are both in the Computing Algorithms notes: the guard is one O(1) lookup, and a breadth-first search on this graph shows that the shortest path from NOMINAL to SAFE_HOLD has length 2 and must pass through SAFE_DETUMBLE. The proof that no run ever contains a forbidden pair is then an <dfn data-term="invariant">invariant</dfn> argument by induction over steps. Base: the machine starts in a legal mode. Step: each step either keeps the mode or moves along an edge with \(A=1\), and the assertion stops anything else. So every trace, of any length, is legal. The same pattern proves "the integrator only changes in NOMINAL": it is zero at the start, and the update rule touches it only when the mode is NOMINAL.</p>
+        <p>Liveness needs one more fact: every mode can reach NOMINAL. Ignoring self-loops, the only cycle is \(N\to SD\to SH\to N\), so the graph is strongly connected and no mode is a trap. That is necessary but not sufficient: the dynamics must also make each guard come true, which is what the Monte Carlo campaign of <a href="m09-verification.html">module 09</a> shows. Temporal logic and model checking are typical content of a logic and automated reasoning subject <span class="tag tag-typical">Typical content</span>. Forbidden transitions and fixed dwell times also make the automation predictable to the people watching it, the human-factors remedy for automation surprise, which is typical content of a human factors subject <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ checking -->
+    <section id="checking" aria-labelledby="checking-title">
+      <h2 id="checking-title">Proving vs finding</h2>
+      <div class="prose">
+        <p>An induction proof is only as good as its model of the code. The other way to gain certainty is to check every case, which is possible because the mode logic is finite once the continuous inputs are abstracted. Replace each guard condition by a boolean: rate above 6 deg/s, fault persisted 0.5 s, rate held below 0.5 deg/s for 2 s, fault active, rate below 0.5 deg/s, error below 4°, dwell done. Seven booleans and three modes give</p>
+        <div class="eq">\[ 3\times2^7=384 \ \text{abstract states} \]</div>
+        <p>of which 144 are physically consistent (a rate cannot be both above 6 and below 0.5 deg/s, a 2 s hold below 0.5 deg/s implies the rate is below 0.5 deg/s, and a persisted fault implies an active one) <span class="tag tag-derived">Derived</span>. An exhaustive check visits every one, applies the transition logic, and tests each invariant. If none fails, that is a <em>proof</em> over the abstraction. If one fails, breadth-first search from NOMINAL returns the <em>shortest</em> counterexample, which is the most useful bug report there is.</p>
+        <p>Random testing is a different kind of evidence. The 60-trial Monte Carlo campaign samples initial conditions; it can find a bug when a sample happens to hit it, but it can never certify that no bug exists. It is worse than that here: the campaign never injects a fault, so a planted bug that ignores the fault flag in the return guard would pass every Monte Carlo trial ever run <span class="tag tag-derived">Derived</span>. The Intelligent Systems notes put the distinction as complete versus incomplete search: backtracking that answers "no solution" is a proof, while sampling or min-conflicts can only fail to find one. The backtracking pattern of the Algorithms notes, which prunes impossible combinations with a validity test before recursing, covers all 384 combinations by visiting the 144 consistent ones, checking three properties: no forbidden transition, determinism (exactly one successor) and NOMINAL reachable. With the tools of the Python search notes (a dictionary for the transition table, a set of forbidden pairs that raises an exception, and backtracking that assigns, recurses and undoes) such a checker is a few dozen lines.</p>
+        <p>The abstraction is what makes this cheap. Keep the real timers instead of booleans and the state space multiplies. At dt = 0.1 s the counters take 21, 6 and 81 values, so the product automaton has \(3\times21\times6\times81=30{,}618\) states; at the simulator's dt = 0.01 s it would be <span class="calc" data-calc="explosion">about 24.6 million</span> <span class="tag tag-derived">Derived</span>. That is state explosion in miniature, and the reason real model checkers work so hard on abstraction.</p>
+      </div>
+
+      <figure class="widget" id="w-prove-find" aria-labelledby="w-prove-find-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-prove-find-title">Prove vs find</h3>
+          <p class="widget-try"><strong>Try:</strong> run the exhaustive check on the correct machine, then plant each bug in turn; for each, run random testing too, and finally random-test the correct machine. <strong>Notice:</strong> the exhaustive check always ends with a verdict and, for a bug, the shortest path to it; random testing finds bugs at very different speeds and, on the correct machine, never certifies anything.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Successors come from <code>ADCS.modes.nextModeAbstract</code> with the selected planted bug; invariants from <code>ADCS.modes.ABSTRACT_INVARIANTS</code>. Random testing draws a mode and seven booleans uniformly and rejects inconsistent draws.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ monitor -->
+    <section id="monitor" aria-labelledby="monitor-title">
+      <h2 id="monitor-title">A run-time monitor</h2>
+      <div class="prose">
+        <p>Proofs cover the design; a monitor covers the run. Log the mode at every tick and the legal logs form a regular language. Under the strict cycle, and starting from NOMINAL, they match</p>
+        <div class="eq">\[ N^{+}\,\big(SD^{+}\,SH^{+}\,N^{+}\big)^{*}\,\big(SD^{+}\,SH^{*}\big)^{?} \]</div>
+        <p>A regular language is recognised by a <dfn data-term="dfa">deterministic finite automaton</dfn>, so the monitor needs only four states, {N, SD, SH, ERR}, and one table lookup per tick: O(n) time and O(1) memory for a log of n ticks. Its transition function \(\delta\), with the fault rule added:</p>
+      </div>
+      <div class="scroll-x" tabindex="0" role="region" aria-label="Monitor transition table">
+        <table class="table compact m08-delta">
+          <caption>Monitor DFA: next state for each logged mode</caption>
+          <thead><tr><th scope="col">State</th><th scope="col">reads N</th><th scope="col">reads SD</th><th scope="col">reads SH</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">N</th><td>N</td><td>SD</td><td class="bad">ERR (N → SH)</td></tr>
+            <tr><th scope="row">SD</th><td class="bad">ERR (SD → N)</td><td>SD</td><td>SH</td></tr>
+            <tr><th scope="row">SH</th><td>N, or ERR if the fault is active</td><td class="gap">ERR (not specified)</td><td>SH</td></tr>
+            <tr><th scope="row">ERR</th><td>ERR</td><td>ERR</td><td>ERR</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>Completing the table forces a decision in every cell, and one cell has no answer in the specification: what should happen when the log shows SAFE_HOLD followed by SAFE_DETUMBLE? The monitor rejects it because the spec does not allow it, which leads straight to the next section. DFAs, regular expressions and completing a transition function are typical content of a theory of computing subject <span class="tag tag-typical">Typical content</span>. In the string-matching terms of the Algorithms notes, the same check is a pattern scan: a forbidden transition is a length-2 pattern, [SD, N] or [N, SH], in consecutive samples, and run-length encoding the log in O(n) lets you assert that every SAFE_HOLD run before a return lasted at least 8 s. The simulator runs this monitor, <code>ADCS.modes.checkTrace</code>, on every preset and every Monte Carlo trial.</p>
+      </div>
+
+      <figure class="widget" id="w-monitor" aria-labelledby="w-monitor-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-monitor-title">Mode-trace monitor</h3>
+          <p class="widget-try"><strong>Try:</strong> load the T03 log and check it; then load a broken log, or type your own, for example <code>SD SH N SD N</code> or <code>SD SH! N!</code>. <strong>Notice:</strong> the monitor reads the run-length log in one pass, stops at the first illegal step and names the rule; the regular expression ignores the fault flag, which only the automaton can see.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Tokens are N, SD and SH, separated by spaces; a trailing <code>!</code> marks the fault as active and <code>*k</code> repeats a token for k ticks. The monitor starts in NOMINAL, the machine's initial mode.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ gap -->
+    <section id="gap" aria-labelledby="gap-title">
+      <h2 id="gap-title">A specification gap</h2>
+      <div class="prose">
+        <p>Three modes give six ordered pairs of different modes. The project's notes cover five of them: three are allowed with guards (N → SD, SD → SH, SH → N) and two are forbidden (SD → N, N → SH) <span class="tag tag-project">Project</span>. The sixth, SAFE_HOLD → SAFE_DETUMBLE, is not mentioned at all. It is neither allowed nor forbidden; it is simply missing.</p>
+        <p>Does it matter? Ask what should happen if the rate rises above 6 deg/s during SAFE_HOLD, say because a wheel fault re-upsets the craft. As written, the machine stays in SAFE_HOLD, and the 8 s dwell timer keeps counting. The hold law's rate gain is in fact higher than detumble's (0.07 against 0.05 N m s/rad), and in the first second it damps the tumble just as fast (3.6 deg/s after 1 s, against 3.8 deg/s for detumble). The difference is its attitude term: once the tumble is gone, it slews the craft back toward the target at up to about 2.8 deg/s, so the rate climbs again and then decays only as fast as the attitude error does. In this site's engine a T03-sized upset (11.2 deg/s, 37° off) that starts in SAFE_HOLD first falls below 0.5 deg/s after about 27 s, against 2.5 s through SAFE_DETUMBLE <span class="tag tag-derived">Derived</span>. The craft still recovers, but its rate stays above 0.5 deg/s about ten times as long. Nobody chose this behaviour; it is what an incomplete table does by default. Finding such holes is a large part of what formal reasoning is for: writing the relation as a complete 3 × 3 table, or completing a DFA's transition function, makes every missing case visible.</p>
+        <p>This site implements the specification as written, so its results are the project's. It also offers an option that is off by default, "close the gap", which adds SH → SD with the same trigger as NOMINAL's entry guard, \(\lVert\omega\rVert&gt;6^\circ/\text{s}\lor t_{\text{fault}}\ge0.5\) s <span class="tag tag-option">Site option</span>. The matrix below shows the relation either way, and the simulator link runs T03 with the gap closed.</p>
+      </div>
+
+      <figure class="widget" id="w-relation" aria-labelledby="w-relation-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-relation-title">Transition-relation matrix</h3>
+          <p class="widget-try"><strong>Try:</strong> select each of the nine cells, then turn on "close the gap". <strong>Notice:</strong> the diagonal holds the "stay" conditions; two cells are forbidden for a stated reason; one cell is the specification gap until you close it.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Built from <code>ADCS.modes.allowedMatrix(gap)</code> and <code>ADCS.modes.FORBIDDEN</code>; guard texts use the thresholds in <code>ADCS.params.DEFAULTS.safeMode</code>.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-option">Site option</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ faults -->
+    <section id="faults" aria-labelledby="faults-title">
+      <h2 id="faults-title">Where the fault flag comes from</h2>
+      <div class="prose">
+        <p>In the simulator the fault flag is a scripted window, 45 to 60 s in T03 and 10 to 20 s in FAULT <span class="tag tag-site">Site default</span>. In flight something has to raise it, and the logic above is only as good as that something. <a href="m07-sensors.html#fdir">Module 07</a> covers the estimation side; here are the sources and their failure styles.</p>
+        <ul>
+          <li><strong>Residual detectors</strong> compare two signals that should agree, such as the commanded and the measured wheel torque, and trip on a persistent mismatch, as a residual-current device does in the Electromechanics notes. The same notes describe the layer below software: a motor driver's hardware overcurrent trip is a second, faster and independent protection loop, and the attitude software sees its result as a fault flag.</li>
+          <li><strong>Watchdogs</strong> catch the computer itself. The scheduling material of the Database Infrastructure and OS Internals notes explains how a control task misses its deadline, deadlocks or starves; a watchdog that notices becomes an input to the safe-mode supervisor. A watchdog timer that resets the processor into a safe mode is typical content of a computer architecture subject <span class="tag tag-typical">Typical content</span>. The write-ahead logging of the same notes points to a subtle requirement: record the mode change durably <em>before</em> acting on it, or a reset in SAFE_DETUMBLE that reboots into NOMINAL becomes a forbidden SD → N transition through the back door.</li>
+          <li><strong>Persistence as debounce.</strong> The 0.5 s persistence is the base-rate defence of module 07: a single noisy sample should not take the craft out of NOMINAL. Telemetry outlier detection with exactly this debounce is the Data Mining link.</li>
+        </ul>
+        <p>Every detector trades misses against false alarms. Read with the evaluation metrics of the Supervised Learning notes, safe-mode entry is a binary classifier: lowering the threshold or the persistence raises recall (faster, surer detection) and lowers precision (more false entries and lost mission time). As those notes show, the trade is set by the threshold, not by the model. Because a missed fault costs more than a false alarm, \(F_\beta\) with \(\beta&gt;1\) is the natural score. Two results from the agentic-workflow material of the Deep Learning notes carry over as cautions: a verifier's recall sets a ceiling that no retry budget exceeds, so no recovery logic can make up for a fault class the monitor cannot see; and majority voting only amplifies the accuracy its voters already have, so it cannot remove a common-mode fault in which every channel is wrong the same way.</p>
+        <p>Finally, the supervisor is what the AI Methodologies notes call a forward-chaining production system, the direction those notes recommend for monitoring: its rules fire on facts (|ω|, fault time, dwell) every step. The same notes name the characteristic weakness of rule-based systems: an unencoded symptom produces no output at all, so <strong>symbolic systems fail by silence</strong>. Here, a failure that no rule mentions, such as a stuck wheel that keeps |ω| below 6 deg/s and never raises the fault flag, produces no transition at all and looks exactly like a healthy spacecraft. The usual remedies are a catch-all watchdog rule ("enter safe mode unless health is positively confirmed within T") and fault-injection tests for every anticipated fault class.</p>
+        <p>Because the <code>mode</code> fact is retracted and replaced at every transition, the rule base is <em>non-monotonic</em>, and the order in which rules are tried becomes part of its meaning. The project's return rule settles one such conflict by construction: it requires "fault clear", so a fault that reappears in the same step as the dwell timer completes keeps the craft in SAFE_HOLD. A rule engine also keeps an audit trail for free: every mode change can be logged with the rule that fired and the fact values that made it fire.</p>
+      </div>
+
+      <figure class="widget" id="w-rule-engine" aria-labelledby="w-rule-engine-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-rule-engine-title">Mode logic as a rule engine</h3>
+          <p class="widget-try"><strong>Try:</strong> set the facts so that each mode rule fires in turn, then switch on "Stuck wheel" in NOMINAL, and finally switch on the watchdog rule. <strong>Notice:</strong> every decision names its rule and the fact values behind it; the stuck wheel changes a fact that no rule mentions, so nothing fires and the craft looks healthy; the watchdog fires because health can no longer be <em>confirmed</em>.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>One inference cycle: derive the guard facts from working memory, collect the mode rules whose conditions all hold (the conflict set), fire the first by priority. The result is cross-checked against <code>ADCS.modes.nextModeAbstract</code>. The stuck wheel and the watchdog rule are illustrations, not part of the project.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-option">Site option</span><span class="tag tag-illustrative">Illustrative</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <p class="in-short"><strong>In short:</strong> safe mode is a three-mode extended state machine whose guards are predicates and whose timers are integer counters. The 6 / 0.5 deg/s gap and the 2 s and 8 s timers stop flapping and guarantee at least 10 s between returns to NOMINAL. The forbidden transitions are invariants: provable by induction, checkable exhaustively over 384 abstract states, and monitorable at run time by a four-state automaton, while random testing can only ever find bugs. Completing the transition table exposes the one case the notes never specified, SAFE_HOLD → SAFE_DETUMBLE.</p>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

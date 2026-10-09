@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 Verification and Monte Carlo statistics · Attitude Control: The Big Picture</title>
+<meta name="description" content="Run the T01–T06 test matrix and a seeded Monte Carlo campaign, and work out what 60 passes in 60 trials can and cannot prove.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m09.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m09.js"></script>
+</head>
+<body data-page="m09">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 09</span>
+      <h1>Verification and Monte Carlo statistics</h1>
+      <p class="module-purpose">Run the project's test matrix and its seeded Monte Carlo campaign in the browser, then work out exactly what 60 passes out of 60 can and cannot prove.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Prove</span>
+        <span>About 35 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ matrix -->
+    <section id="matrix" aria-labelledby="matrix-title">
+      <h2 id="matrix-title">The test matrix</h2>
+      <div class="prose">
+        <p>A requirement is only as good as the evidence that it is met. The project's test plan turns its five requirements into six tests, each with a scenario and an expected result written before anything is run <span class="tag tag-project">Project</span>. T01 and T02 check pointing (REQ-F2) with each nominal controller. T03 is the safe-mode upset with a temporary fault, and it checks three requirements at once: F1, S1 and S2. T04 is the 60-trial Monte Carlo campaign behind the statistical requirement L1. T05 and T06 are sweeps rather than scenarios: the largest rate and the largest torque across every run.</p>
+        <p>The link from requirements to tests is the <dfn data-term="traceability">traceability</dfn> built in <a href="m01-requirements.html#trace">module 01</a>. Two checks keep it honest: every requirement has at least one test (nothing is unverified), and every test serves at least one requirement (nothing is an orphan). In the Data Structures notes' terms the trace is an incidence matrix, and T03 is a hyperedge: it verifies {F1, S1, S2} together in one scenario, which a list of pairs would lose. Turning each row of the matrix into an automated test, with golden-file regression checks and tolerances, is typical content of a software projects subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The runner below executes the matrix with the site's engine. T01 to T03 are single runs and finish at once. T04 runs the whole campaign in the browser, in chunks so the page stays responsive, and T05 and T06 reuse its 60 trials, so they report as soon as T04 does. Each row shows its key value: final error and settling time for T01 and T02, the transition sequence and peak rate for T03, the pass count and confidence bound for T04, and the worst rate or torque over every run for T05 and T06.</p>
+      </div>
+
+      <figure class="widget" id="w-test-matrix" aria-labelledby="w-test-matrix-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-test-matrix-title">Test-matrix runner</h3>
+          <p class="widget-try"><strong>Try:</strong> run T01, then press "Run all" and watch the campaign progress; open the trace below the table. <strong>Notice:</strong> every row passes, T04 passes only "just" (its 95% lower bound barely clears 95%), and T05's worst case is a named scenario, T02 (LQR with safe mode off, 14.28 deg/s, margin 0.72), not the Monte Carlo campaign, whose worst trial reaches 12.47 deg/s.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Rows, scenarios and expected results come verbatim from <code>ADCS.tests.matrix</code>; the checks run the site's engine (<code>row.run()</code>, with progress and cancel for the campaign).</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span><span class="tag tag-site">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ metrics -->
+    <section id="metrics" aria-labelledby="metrics-title">
+      <h2 id="metrics-title">Metrics from logs</h2>
+      <div class="prose">
+        <p>A pass or a fail is a summary; the metrics behind it come from the logged time series. The project defines them precisely <span class="tag tag-project">Project</span>, and the precision matters.</p>
+        <p><strong><dfn data-term="settling-time">Settling time</dfn></strong> is "the first time after which attitude error &lt; 2° and angular rate &lt; 0.5 deg/s <em>remain</em> satisfied". That is the <em>last</em> entry into the band, not the first: a response that dips in and bounces out has not settled. Computed naively, by testing every candidate start forward, it costs O(n²). Scanning backward once from the end finds the last violating sample \(k^*\) in O(n):</p>
+        <div class="eq">\[ k^*=\max\{k:\ \lnot(e_k&lt;2^\circ\land\lVert\omega_k\rVert&lt;0.5^\circ/\text{s})\},\qquad t_s=t_{k^*+1} \]</div>
+        <p><strong>Control effort</strong> is the integral of the squared torque magnitude, which the site integrates by the trapezoid rule over the logged samples, in N² m² s:</p>
+        <div class="eq">\[ E=\int_0^T\lVert\tau\rVert^2\,dt\ \approx\ \sum_k\tfrac{\Delta t}{2}\big(\lVert\tau_k\rVert^2+\lVert\tau_{k+1}\rVert^2\big) \]</div>
+        <p><strong>Safety margin</strong> is the distance from the 15 deg/s limit, \(15-\max_t\lVert\omega\rVert\), and <strong>maximum torque</strong> is the largest actuator command after saturation. The margin has a precise meaning in signal temporal logic: the robustness of the property "always \(\lVert\omega\rVert\le15\) deg/s" is the smallest distance to violation over the whole run,</p>
+        <div class="eq">\[ \rho\big(\mathbf G\,(\lVert\omega\rVert\le15)\big)=\min_t\big(15-\lVert\omega(t)\rVert\big)=15-\max_t\lVert\omega(t)\rVert \]</div>
+        <p>so the project's worst Monte Carlo case gives a robustness of \(15-13.22=1.78\) deg/s <span class="tag tag-project">Project</span>. A positive robustness means the property holds, and its size says how much worse things could get before it fails. The Electromechanics notes define settling time the same way, as the last entry into a ±2% or ±5% band after which the output stays inside it, and the complexity analysis taught in the Computing Algorithms notes shows why the backward scan is O(n) where the naive search is O(n²). Grouping a table of runs pivot-style (pass rate per controller, worst case per band) to turn rows into a summary is typical content of an information-systems subject <span class="tag tag-typical">Typical content</span>. The table below applies the definitions to six preset logs, computed live.</p>
+      </div>
+      <div class="m09-metrics-table" data-auto-table="metrics"></div>
+    </section>
+
+    <!-- ============================================================ mc -->
+    <section id="mc" aria-labelledby="mc-title">
+      <h2 id="mc-title">The Monte Carlo campaign</h2>
+      <div class="prose">
+        <p>T03 tests one upset. REQ-L1 asks about upsets in general, "at least 95% of Monte Carlo trials", so the project ran a <dfn data-term="monte-carlo">Monte Carlo</dfn> campaign <span class="tag tag-project">Project</span>:</p>
+        <ul>
+          <li>60 trials;</li>
+          <li>initial attitude: a random axis with an angle of up to 120°;</li>
+          <li>initial rate: each axis uniform in −8 to 8 deg/s;</li>
+          <li>disturbance torque: each axis uniform in ±2×10⁻⁵ N m;</li>
+          <li>PID nominal control with the safe-mode logic switched on.</li>
+        </ul>
+        <p>The pass rule for L1 needs stating, because it is an interpretation: a trial passes if it never needed detumbling (it began below the detumble threshold) or if every safe-mode entry reached \(\lVert\omega\rVert&lt;0.5\) deg/s within 60 s of the entry <span class="tag tag-project">Project</span>. Separately, a trial is <em>finally stable</em> if it ends in NOMINAL with error below 2° and rate below 0.5 deg/s, and <em>safe</em> if it never exceeds 15 deg/s or the torque limit.</p>
+        <p>The project reported a 100% detumble pass rate, 100% final stability, 100% safety and a worst rate of 13.22 deg/s <span class="tag tag-project">Project</span>. This site, with seed 42 and its own gains, gets the same three verdicts, 60/60 each, with a worst rate of 12.47 deg/s, 54 safe-mode entries in total, a longest detumble of 2.62 s and the last return to NOMINAL by 52.8 s <span class="tag tag-derived">Derived</span>. The numbers differ in detail because the gains and the random draws differ; the verdicts agree.</p>
+        <p>Robust design calls the randomised inputs <em>noise factors</em>: conditions the design cannot choose but must pass across. That idea is typical content of a mechanical engineering design subject <span class="tag tag-typical">Typical content</span>, and the solar-cycle variation of thermospheric density, typical content of an atmospheric science subject, is a physical reason to randomise the disturbance at all <span class="tag tag-typical">Typical content</span>. Natural extensions would randomise more: the inertia (manufacturing variation, say \(J_i\times U(0.9,1.1)\)), actuator misalignment and rotor imbalance <span class="tag tag-extension">Extension</span>. The trials are independent, so the campaign is embarrassingly parallel: the Systems Programming notes' measurements of threads against processes, and their advice to vectorise before parallelising, apply directly. The threads and the <code>mt19937</code> generator of the Object-Oriented Programming (C++) notes show the safe way to seed it: one stream per trial, and an atomic pass counter.</p>
+      </div>
+
+      <figure class="widget" id="w-mini-mc" aria-labelledby="w-mini-mc-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-mini-mc-title">Mini Monte Carlo</h3>
+          <p class="widget-try"><strong>Try:</strong> switch the histogram metric, click a point in the scatter, then rerun with LQR, with uniform-rotation sampling, with another seed and with 300 trials. <strong>Notice:</strong> every trial above the 6 deg/s line enters safe mode at once; points below the 6 deg/s line can still enter safe mode, because the PID slew itself crosses 6 deg/s; the worst peak rate equals a trial's initial rate; the lower bound rises with n while the pass count stays at n.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Each trial is a full 120 s simulation (<code>ADCS.mc.run</code>, chunked, cancellable). Trial i uses the seed <code>trialSeed(seed, i)</code>, so any trial can be replayed exactly in the simulator.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span><span class="tag tag-site">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ sampling -->
+    <section id="sampling" aria-labelledby="sampling-title">
+      <h2 id="sampling-title">Sampling the initial conditions</h2>
+      <div class="prose">
+        <p>How the trials are drawn decides what the campaign tests. Start with the rates. Each axis is uniform in ±8 deg/s, so the largest possible initial rate is the corner of the cube:</p>
+        <div class="eq">\[ \lVert\omega_0\rVert\le8\sqrt3=13.86\ \text{deg/s}&lt;15\ \text{deg/s} \]</div>
+        <p>No trial ever <em>starts</em> above the REQ-S1 limit <span class="tag tag-derived">Derived</span>. So what REQ-S1 tests here is narrower than it looks: that the controller never spins the craft <em>up</em> past 15 deg/s from a start of at most 13.86 deg/s. The worst peak, 12.47 deg/s, is exactly trial 0's initial rate. The controller does spin some trials up: in 11 trials the peak exceeds the initial rate, because the slew from a large attitude error accelerates the craft. In 9 of them, all starting below 6 deg/s, the PID slew crosses the 6 deg/s guard within about 1.3 s and trips safe mode (peaks 6.0–6.3 deg/s), and none of the 11 passes 6.7 deg/s <span class="tag tag-derived">Derived</span>. That is why 54 trials enter safe mode although only 45 start above 6 deg/s. Each per-axis rate has mean 0 and variance \((b-a)^2/12=(16)^2/12\approx21.3\) (deg/s)², the uniform-distribution facts that are typical content of an engineering mathematics subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The attitude is subtler. "A random axis with an angle up to 120°" read literally, as an angle drawn uniformly in 0 to 120° about a uniformly random axis, is how this site samples it. It is <em>not</em> a uniform sample of orientations. Uniform orientations correspond to uniform unit quaternions on the 3-sphere, and with \(q_0=\cos(\theta/2)\) a change of variables gives the rotation-angle density</p>
+        <div class="eq">\[ f(\theta)=\frac{1-\cos\theta}{\pi},\qquad 0\le\theta\le\pi \]</div>
+        <p>which is tiny near zero: there are few ways to be almost aligned and many ways to be far off. Restricted to 120°, uniform orientations put only about 1.9% of trials below 30°, while the uniform-angle method puts 25% there <span class="tag tag-derived">Derived</span>. The project's sampling, read this way, over-weights easy, small-angle cases. That does not make the result wrong, but the 100% applies to the sampled distribution, not to "any attitude". Change of variables in multiple integrals is typical content of a second calculus subject <span class="tag tag-typical">Typical content</span>. The Algorithms notes make the same point about shuffling: a naive shuffle is biased, Fisher–Yates is not, and the lesson is to sample uniformly in the right space. The widget below draws 3,000 angles each way.</p>
+      </div>
+
+      <figure class="widget" id="w-sampling-bias" aria-labelledby="w-sampling-bias-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-sampling-bias-title">Sampling bias</h3>
+          <p class="widget-try"><strong>Try:</strong> compare the two histograms below 30°, then draw a new set of samples. <strong>Notice:</strong> the uniform-angle bars are flat, the uniform-rotation bars climb like \(1-\cos\theta\), and the fractions below 30° stay near 25% and 2% whatever the seed.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>3,000 draws of <code>ADCS.mc.sampleTrial</code> with <code>sampling: 'project'</code> and <code>'uniform'</code> (uniform quaternions, rejected above 120°), in 5° bins, with the theoretical counts as curves.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ confidence -->
+    <section id="confidence" aria-labelledby="confidence-title">
+      <h2 id="confidence-title">What 60/60 proves</h2>
+      <div class="prose">
+        <p>Sixty passes out of sixty is not "100% reliable". Model each trial as a pass or a fail with some unknown pass probability \(p\); the campaign is then a binomial experiment, and the honest question is how small \(p\) could be and still make 60/60 plausible. The one-sided <dfn data-term="clopper-pearson">Clopper–Pearson</dfn> lower bound \(p_L\) at confidence \(C=1-\alpha\) is the \(p\) at which seeing \(s\) or more passes in \(n\) trials has probability exactly \(\alpha\):</p>
+        <div class="eq">\[ \sum_{k=s}^{n}\binom nk p_L^{\,k}(1-p_L)^{n-k}=\alpha \]</div>
+        <p>With zero failures (\(s=n\)) only the last term survives, \(p_L^{\,n}=\alpha\), so</p>
+        <div class="eq">\[ p_L=\alpha^{1/n},\qquad 0.05^{1/60}=0.9513 \]</div>
+        <p>At 95% confidence, 60/60 shows the pass rate is at least 95.1% <span class="tag tag-derived">Derived</span>. REQ-L1 asks for 95%, so the campaign demonstrates it, but only just. One failure changes the verdict: 59/60 gives a bound of 0.9234, and 58/60 gives 0.8988, both short of 95% even though 59/60 = 98.3% <em>looks</em> comfortable <span class="tag tag-derived">Derived</span>. The <dfn data-term="rule-of-three">rule of three</dfn> is the quick version: with no failures in n trials, the failure rate is below about \(3/n\) at 95% confidence, here 5%.</p>
+        <p>Turn it around. If the true pass rate were exactly 95%, a campaign of 60 would still come out 60/60 with probability \(0.95^{60}=4.6\%\) <span class="tag tag-derived">Derived</span>, and that is why 60/60 is evidence for "at least about 95%" and no more. To demonstrate a reliability \(R\) at confidence \(C\) with zero failures you need</p>
+        <div class="eq">\[ n=\left\lceil\frac{\ln(1-C)}{\ln R}\right\rceil:\qquad 59\ \text{trials for }95\%,\qquad 299\ \text{for }99\% \]</div>
+        <p>at 95% confidence <span class="tag tag-derived">Derived</span>. The project's 60 is one more than the minimum. These bounds, the sample-size formula and the binomial model are typical content of a quantitative reasoning subject and of an engineering mathematics subject <span class="tag tag-typical">Typical content</span>. The Algorithms notes' warning fits exactly: testing cannot establish the correctness of a heuristic, and the numbers above say how far it can go. The Design of Machine Elements notes treat bearing life the same way: L10 is the life that 90% of a batch reaches, a percentile claim about a distribution, just as REQ-L1 is a claim about a fraction of trials.</p>
+      </div>
+
+      <figure class="widget" id="w-np-proof" aria-labelledby="w-np-proof-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-np-proof-title">What does n/k prove?</h3>
+          <p class="widget-try"><strong>Try:</strong> start at 60 trials with no failures, add one failure, then find how many trials restore the verdict; then run the binomial-luck campaigns at a true pass rate of 95%. <strong>Notice:</strong> one failure costs 33 extra clean trials (93 in all); and a 95% design shows a perfect 60/60 in only about one campaign in 22.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Bounds from <code>ADCS.stats.cpLower</code> (exact one-sided Clopper–Pearson) and <code>zeroFailureN</code>; the virtual campaigns use a seeded <code>ADCS.rng</code> stream.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ worst -->
+    <section id="worst" aria-labelledby="worst-title">
+      <h2 id="worst-title">Worst cases and margins</h2>
+      <div class="prose">
+        <p>A mean answers "how does it usually behave?"; a safety requirement asks "does it ever misbehave?". REQ-S1 says the rate shall <em>never</em> exceed 15 deg/s, so the evidence that matters is the tail: the worst case, and a high percentile with its method stated. Certification works this way. Aircraft performance is planned on the worst credible case, not the average day, and reporting the worst Monte Carlo case (13.22 against 15 deg/s) is the same habit; that framing is typical content of an aircraft performance and planning subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The project explained its worst cases: they "occur when the initial attitude error is large and the initial angular rate vector excites more than one body axis", with torque saturation active early, so the response is limited by the actuator rather than the gains <span class="tag tag-project">Project</span>. Explaining the tail is a data-mining task in miniature: each trial is a row, and the classification and association rules listed in the Data Mining notes, applied to (initial angle, |ω₀|, disturbance), can find the regime that produces slow or extreme trials. Clustering the outcomes does the same without labels, and the Unsupervised Learning notes add a warning for anyone choosing a design from such a table: picking the best of several noisy scores is biased upward, the winner's curse.</p>
+        <p>A margin is conditional on the envelope that produced it. The worst site trial peaked at 12.47 deg/s because that was its <em>initial</em> rate, and no trial can start above 13.86 deg/s, so the 2.5 deg/s margin is set mostly by the sampling range, not by the controller. The tightest margin on the site comes from no random trial at all: the T02 slew from rest under LQR, with safe mode off, peaks at 14.28 deg/s, a margin of 0.72 deg/s, because the saturated actuator accelerates the craft for longer than the linear design expects (<a href="m05-control.html#saturation">module 05</a>) <span class="tag tag-derived">Derived</span>. That is why T05 sweeps the named scenarios as well as the campaign. The Supervised Learning notes make the general point: the evidence cannot extrapolate beyond its sample, as a random forest cannot predict outside its training range, so a claim about a 12 deg/s-per-axis upset needs new trials. When trials do fail, a structured review helps; tiered accident models that separate the act, its preconditions, supervision and organisation are typical content of an aviation human-factors subject <span class="tag tag-typical">Typical content</span>. The mini Monte Carlo above lists its five worst trials, each with a replay link.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ discipline -->
+    <section id="discipline" aria-labelledby="discipline-title">
+      <h2 id="discipline-title">Seeds, reproducibility and leakage</h2>
+      <div class="prose">
+        <p>A campaign is only evidence if it can be repeated. The project's risk register names the risk "results not reproducible" and its mitigation: "fix random seed for Monte Carlo and write all outputs to CSV" <span class="tag tag-project">Project</span>. This site goes one step further and gives every trial its own <dfn data-term="seed">seed</dfn>, derived from the base seed and the trial index, so trial 17 is the same trial whatever else runs and can be replayed alone. The Object-Oriented Programming (C++) notes give the same rule for <code>&lt;random&gt;</code>: draw a true random seed at most once, to choose and <em>log</em> the base seed, never inside the verification loop. The ordered maps and hash functions of the Data Structures notes give the rest: tables written in a deterministic row and column order, so two runs produce identical files, and a hash of the parameters stamped on every results file. Storing one row per trial, written in one transaction per campaign, is the database version.</p>
+        <p>The subtler danger is <strong>leakage</strong>. If the gains are tuned until the 60 seeded trials all pass, and the same 60 trials are then reported as verification, the result is optimistic: the design has been fitted to those draws. The Intelligent Systems notes call mixing validation into training the number-one mistake, and the Supervised Learning notes show how large such leaks can be. The fix is the train/validation/test discipline applied to seed sets: tune on one set, verify once on a fresh one. When comparing two designs, run both on the same seeds (common random numbers), because</p>
+        <div class="eq">\[ \operatorname{Var}(A-B)=\operatorname{Var}(A)+\operatorname{Var}(B)-2\operatorname{Cov}(A,B) \]</div>
+        <p>and positively correlated results make the difference much less noisy. Finally, choose a metric that can tell designs apart. If every reasonable gain passes 60/60, nothing separates them. In the local-search language of the Intelligent Systems notes the pass rate is a plateau: hill climbing over gains stops at once, and two designs that differ tenfold in detumble time look identical. The cure is a finer-grained evaluation, such as the detumble-time distribution or the margin. The optional widget below shows it with the detumble gain.</p>
+      </div>
+
+      <figure class="widget" id="w-plateau" aria-labelledby="w-plateau-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-plateau-title">Choosing a metric that can tell designs apart</h3>
+          <p class="widget-try"><strong>Try:</strong> run the sweep on seed set A, then switch on the fresh seed set B. <strong>Notice:</strong> the L1 pass rate is flat at 100% over a twentyfold range of K<sub>d</sub> while the mean detumble time changes about fifteenfold; on fresh set B every gain is a little slower and the ranking is unchanged. That shift is seed-set variation, not selection optimism (the winner shifts less than the average gain does, because the gains are too far apart for noise to pick the winner), so the lesson is the plateau.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Five detumble gains × 30 trials of 60 s each (<code>ADCS.mc.run</code> with <code>config: {detumble: {Kd}}</code>); seed set A is base seed 42, set B is base seed 4242.</p>
+          <span class="tags"><span class="tag tag-site">Site default</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ proof-vs-sampling -->
+    <section id="proof-vs-sampling" aria-labelledby="proof-vs-sampling-title">
+      <h2 id="proof-vs-sampling-title">What sampling can and cannot show</h2>
+      <div class="prose">
+        <p>"Testing shows the presence of bugs, not their absence." Every campaign on this page samples: it can expose a failure, and with enough clean trials it can bound the failure rate at a stated confidence, but it can never show that no failure exists. That limit is typical content of a logic and automated reasoning subject <span class="tag tag-typical">Typical content</span>, and it is why the project's verification uses two kinds of evidence for two kinds of question.</p>
+      </div>
+      <div class="scroll-x" tabindex="0" role="region" aria-label="Two kinds of evidence">
+        <table class="table m09-evidence">
+          <caption>Two kinds of evidence, matched to two kinds of question</caption>
+          <thead><tr><th scope="col">Question</th><th scope="col">Method</th><th scope="col">What it gives</th><th scope="col">What it cannot give</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Can the mode logic ever take a forbidden transition?</th><td>Exhaustive checking of the finite logic (<a href="m08-safe-mode.html#checking">module 08</a>)</td><td>Certainty over the abstraction, and the shortest counterexample if it fails</td><td>Anything outside the abstraction: the continuous dynamics, timing, the real code</td></tr>
+            <tr><th scope="row">Do the dynamics detumble in time from realistic upsets?</th><td>Seeded Monte Carlo over the initial conditions (this module)</td><td>A pass rate with a confidence bound, worst cases, distributions</td><td>Proof of absence of failures; anything outside the sampled envelope</td></tr>
+            <tr><th scope="row">Does every logged run respect the rules?</th><td>Run-time monitor on every log (<a href="m08-safe-mode.html#monitor">module 08</a>)</td><td>A check of each actual run, in O(n)</td><td>Runs that were never made</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>The project's split is the right one: formal reasoning for the small, discrete, safety-critical logic, where exhaustive checking is cheap and complete; statistics for the continuous dynamics, where enumeration is impossible and sampling with stated confidence is the honest alternative; and a monitor on every log to catch what both might miss. Signal temporal logic connects the two worlds: the robustness of a sampled run, such as the 1.78 deg/s S1 margin, is a quantitative version of a logical property <span class="tag tag-project">Project</span>.</p>
+      </div>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <p class="in-short"><strong>In short:</strong> the project verifies five requirements with six traced tests, computes its metrics from logs with precise definitions (last entry into the band, trapezoid effort, margin to the limit), and backs REQ-L1 with a seeded 60-trial Monte Carlo campaign. Sixty clean trials demonstrate a 95% pass rate at 95% confidence, just; one failure would not. The campaign's verdict holds for its sampled envelope, which over-weights small attitude errors and never starts above 13.86 deg/s, and it can find bugs but never prove their absence, which is why the finite mode logic is checked exhaustively instead.</p>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

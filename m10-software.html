@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 Software engineering and embedded code · Attitude Control: The Big Picture</title>
+<meta name="description" content="Structure the controller as embedded-style code that meets hard deadlines, avoids number and concurrency traps, and is tested several ways.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m10.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m10.js"></script>
+</head>
+<body data-page="m10">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 10</span>
+      <h1>Software engineering and embedded code</h1>
+      <p class="module-purpose">The same control laws, written as code that has to run on a small flight computer: one interface for every controller, a loop that never misses its deadline, numbers that never overflow, data that is never half-written, and tests that can catch what a single plot cannot.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Build</span>
+        <span>About 30 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ three-implementations -->
+    <section id="three-implementations" aria-labelledby="three-implementations-title">
+      <h2 id="three-implementations-title">One specification, several programs</h2>
+      <div class="prose">
+        <p>The project wrote its attitude controller more than once. The main program is a MATLAB simulation whose core functions sit underneath two user interfaces, a modern one and a legacy one for older installations <span class="tag tag-project">Project</span>. Beside it sit an optional Python validation mirror, which reads the CSV files the simulation writes and checks them, and an optional embedded-style C++ controller stub <span class="tag tag-project">Project</span>. This site's JavaScript engine is a fourth program built from the same specification <span class="tag tag-site">Site default</span>.</p>
+        <p>Several programs for one specification sounds wasteful, but each answers a different question. The simulation asks <em>does the design work?</em> The mirror asks <em>did we compute what we think we computed?</em> It is a sanity check by a second route, the habit the Design of Machine Elements notes close every worked example with. The stub asks <em>could this run on a flight computer?</em> The Intelligent Systems notes give the vocabulary: the control laws plus the mode table are one <em>agent function</em>; the simulation, the C++ stub and this site's engine are <em>agent programs</em> that realise it, so comparing their outputs tests that they agree on that one function; the Python mirror instead re-checks one program's outputs.</p>
+        <div class="scroll-x" tabindex="0" role="region" aria-label="The four programs">
+          <table class="table compact">
+            <caption>One specification, four programs</caption>
+            <thead><tr><th scope="col">Program</th><th scope="col">Language</th><th scope="col">Job</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Simulation with modern and legacy UIs <span class="tag tag-project">Project</span></th><td>MATLAB</td><td>Run the cases, plot, animate, export CSV</td></tr>
+              <tr><th scope="row">Validation mirror <span class="tag tag-project">Project</span></th><td>Python</td><td>Re-check the CSV outputs</td></tr>
+              <tr><th scope="row">Controller stub <span class="tag tag-project">Project</span></th><td>C++</td><td>Show the laws in embedded style</td></tr>
+              <tr><th scope="row">This site's engine <span class="tag tag-site">Site default</span></th><td>JavaScript</td><td>Run everything in the browser</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The danger in several programs is drift. The inertia, the ±0.003 N m limit and the thresholds 6 and 0.5 deg/s, 2 s, 4° and 8 s <span class="tag tag-project">Project</span> appear in every one of them. The Software Engineering and Architecture notes put it precisely: DRY is about <em>knowledge</em>, not characters, and the test is "will these always change together?" Writing the dynamics in three languages is legitimate duplication of <em>code</em>; the constants, equations and conventions must stay single-sourced. On this site every page reads them from one object, <code>ADCS.params</code>, and never types them again.</p>
+        <p>Reading files, writing functions and loops, handling exceptions and using NumPy arrays are the skills the mirror needs, and they are typical content of an introductory programming-for-engineers subject <span class="tag tag-typical">Typical content</span>. If the controller ever moved to separate hardware for a hardware-in-the-loop test, the interface between simulator and controller should be written schema-first, with the schema as the interface document, as the Networking notes describe for RPC. The messages are tiny:</p>
+        <div class="eq">\[ \underbrace{7\times 8\ \text{B}}_{q,\ \omega}=56\ \text{B per state},\qquad \underbrace{3\times 8\ \text{B}}_{\tau}=24\ \text{B per torque command} \]</div>
+        <p>The same notes measured that compressing a single small record made it <em>larger</em>, so per-step packets should be sent as they are <span class="tag tag-derived">Derived</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ structure -->
+    <section id="structure" aria-labelledby="structure-title">
+      <h2 id="structure-title">Controller interface and mode manager</h2>
+      <div class="prose">
+        <p>The project has three control laws, detumble, PID and LQR, and a mode machine that decides which one runs. In C++ that is one abstract base class and three derived classes. The sketch below was written fresh for this site <span class="tag tag-site">Site default</span>; it shows the shape, not the project's own stub.</p>
+        <pre class="code-block" tabindex="0" role="region" aria-label="Code: controller interface and mode manager"><code>enum class Mode : std::uint8_t { Nominal, SafeDetumble, SafeHold };
+
+class AttitudeController {
+public:
+    virtual ~AttitudeController() = default;           // safe delete through a base pointer
+    virtual Vec3 torque(const State&amp; s, const Quat&amp; qRef, double dt) = 0;
+    virtual void reset() {}                             // PID clears its integral here
+protected:
+    static double sat(double u) noexcept {              // one limit for every law (REQ-S2)
+        return u &gt; kTauMax ? kTauMax : (u &lt; -kTauMax ? -kTauMax : u);
+    }
+    static constexpr double kTauMax = 0.003;            // N m per axis
+};
+
+class DetumbleController final : public AttitudeController {
+public:  Vec3 torque(const State&amp; s, const Quat&amp; qRef, double dt) override;   // -Kd w
+};
+class PidController final : public AttitudeController {
+public:  Vec3 torque(const State&amp; s, const Quat&amp; qRef, double dt) override;
+         void reset() override;                                               // zero the integral
+private: Vec3 integral_{};
+};
+class LqrController final : public AttitudeController {
+public:  Vec3 torque(const State&amp; s, const Quat&amp; qRef, double dt) override;   // -K [2 qe_v; w]
+private: double K_[3][6];                                                     // stored gains
+};
+
+class ModeManager {
+public:
+    Status update(double rateDeg, double errDeg, bool fault) noexcept;   // status code, never throws
+    Mode   mode() const noexcept { return mode_; }
+private:
+    Mode mode_ = Mode::Nominal;
+    std::uint16_t faultTicks_ = 0, belowTicks_ = 0, dwellTicks_ = 0;    // integer timers
+};</code></pre>
+        <p>Three details matter. The saturation helper is <code>protected</code>, so every derived law calls the same limit and a future controller cannot "forget" REQ-S2; inheritance, <code>protected</code> members and exceptions are all in the Object-Oriented Programming (C++) notes. The mode and its timers are <code>private</code> to <code>ModeManager</code> behind one <code>update()</code>, so no outside code can force a forbidden SAFE_DETUMBLE → NOMINAL jump; the forbidden transitions become impossible by construction. And every override is marked <code>override</code>: if a signature drifts, say <code>const State&amp;</code> becomes <code>State</code>, the compiler reports an error instead of silently creating a new function that is never called while the base behaviour runs. <code>override</code>, <code>final</code> and virtual destructors are typical content of a short C++ inheritance exercise <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The mode manager itself should be <em>table-driven</em>, not polymorphic. The Software Engineering and Architecture notes say plainly that "a state machine dispatching on a status field is not polymorphism". A transition table of (from, to, guard) rows is reviewable data, and the absence of a NOMINAL → SAFE_HOLD row is the proof that the transition cannot happen:</p>
+        <div class="scroll-x" tabindex="0" role="region" aria-label="Transition table">
+          <table class="table compact m10-modetable">
+            <caption>The mode table as data <span class="tag tag-project">Project</span></caption>
+            <thead><tr><th scope="col">From</th><th scope="col">To</th><th scope="col">Guard</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">NOMINAL</th><td>SAFE_<wbr>DETUMBLE</td><td>|ω| &gt; 6 deg/s, or fault active ≥ 0.5 s</td></tr>
+              <tr><th scope="row">SAFE_<wbr>DETUMBLE</th><td>SAFE_<wbr>HOLD</td><td>|ω| &lt; 0.5 deg/s held for 2 s</td></tr>
+              <tr><th scope="row">SAFE_<wbr>HOLD</th><td>NOMINAL</td><td>fault clear, |ω| &lt; 0.5 deg/s, error &lt; 4°, dwell ≥ 8 s</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Where do errors go? In ground tools such as a batch runner, the UI or a CSV loader, a non-physical input (dt ≤ 0, a NaN rate, a fault window that ends before it starts) should throw an exception, as the C++ notes teach with <code>throw</code>, <code>try</code> and <code>catch</code>. Flight code is different: many embedded coding standards restrict exceptions because stack unwinding has unpredictable timing, so the flight-style stub should be <code>noexcept</code>, return status codes and fall back to safe values. This site's engine behaves like a ground tool: give it an impossible scenario and <code>ADCS.sim.run</code> throws a <code>RangeError</code>, which every widget catches and shows inline.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ loop -->
+    <section id="loop" aria-labelledby="loop-title">
+      <h2 id="loop-title">The real-time loop</h2>
+      <div class="prose">
+        <p>On a flight computer the controller is a loop driven by a timer interrupt: <strong>read</strong> the sensors, decide the <strong>mode</strong>, compute the control <strong>law</strong>, <strong>saturate</strong>, <strong>write</strong> the torque command, <strong>wait</strong> for the next tick. The Electromechanics notes describe exactly this digital scan loop and its rule of thumb: the scan delay acts like dead time, so scan at least ten times faster than the fastest dynamics being controlled.</p>
+        <p>How fast is fast enough here? The LQR closed loop has natural frequencies of 0.89 to 1.12 rad/s <span class="tag tag-derived">Derived</span>, a bandwidth of about 0.14 to 0.18 Hz:</p>
+        <div class="eq">\[ f_{bw}\approx\frac{\omega_n}{2\pi}\approx 0.18\ \text{Hz}\quad\Rightarrow\quad f_s\ \ge\ 10\,f_{bw}\approx 2\ \text{Hz},\qquad \phi_{ZOH}\approx\frac{\omega T}{2} \]</div>
+        <p>Sampling 10 to 30 times the bandwidth, and the phase lag \(\omega T/2\) that a zero-order hold adds, are typical content of a control-systems subject <span class="tag tag-typical">Typical content</span>. At 10 Hz (\(T = 0.1\) s) the lag at 1 rad/s is 0.05 rad, about 2.9° <span class="tag tag-derived">Derived</span>. So 10 to 100 Hz loops are comfortable; this site runs its controller every 0.01 s <span class="tag tag-site">Site default</span>. The fast inner current loop of the wheel motor is another matter, with a time constant near 0.1 ms, and lives in the motor driver.</p>
+        <p>The control task shares the processor with an estimator, telemetry and logging, so something has to decide who runs. The Database Infrastructure and OS Internals notes measured the <em>convoy effect</em>: without preemption, short jobs queue behind a long one. Only <em>preemptive</em> scheduling, here fixed-priority, guarantees that a long telemetry dump never delays the control step. With priorities set by period (shorter period, higher priority), the classic sufficient test is the <dfn data-term="rate-monotonic">rate-monotonic</dfn> bound <span class="tag tag-extension">Extension</span>:</p>
+        <div class="eq">\[ U=\sum_{i=1}^{n}\frac{C_i}{T_i}\ \le\ n\left(2^{1/n}-1\right)=0.780\ (n=3),\ \ 0.757\ (n=4),\ \ \to\ln 2\approx0.693 \]</div>
+        <p>Here \(C_i\) is each task's <dfn data-term="wcet">worst-case execution time</dfn> and \(T_i\) its period. WCET must assume cold caches: the same notes measured memory access up to 4.31 times slower after another task evicted the cache. Control data should flow through a capacity-one "latest value" mailbox, because a queue of stale measurements is pure phase lag; commands and events need a <em>bounded</em> FIFO, whose blocking is visible backpressure rather than silent memory growth.</p>
+      </div>
+
+      <figure class="widget" id="w-deadline" aria-labelledby="w-deadline-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-deadline-title">Deadline budget</h3>
+          <p class="widget-try"><strong>Try:</strong> switch on "Cold cache ×2" and compare FCFS with fixed priority; then switch the cold cache off, switch on the GC pause and compare fixed priority with rate-monotonic. <strong>Notice:</strong> FCFS misses deadlines at only 60% load (the convoy effect), and the GC pause makes the estimator miss with hand-set priorities but not with rate-monotonic ones.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>A discrete-event scheduler on one processor over 1 s; deadlines equal periods and a late job keeps running until it finishes. The task set and the injectors are illustrative choices for this site, not project data.</p>
+          <span class="tags"><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-extension">Extension</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ memory -->
+    <section id="memory" aria-labelledby="memory-title">
+      <h2 id="memory-title">No heap, no recursion, fixed buffers</h2>
+      <div class="prose">
+        <p>A hard deadline is a worst-case promise, and memory management is where worst cases hide. The Systems Programming and Memory notes measured a <code>malloc</code> and <code>free</code> pair at about 2.2 ns when the allocator recycles a block, but 50.9 ns or more when the heap has to grow, with fragmentation and a NULL return as new failure modes. A garbage collector is worse: its pause grows with the live set, 191 ms at a million objects, longer than the whole 100 ms budget of a 10 Hz loop. And the most dangerous bug of all is silent: <strong>a leak exits 0</strong>. The notes held 509 MB with no error at all. A few bytes leaked per control cycle pass every short test and exhaust memory days into a mission, ending in a watchdog reset and an unplanned safe-mode entry.</p>
+        <p>So flight code allocates everything once, at start-up: the 10-element state \([q,\ \omega,\ \textstyle\int e]\), the four RK4 stage vectors, the gain table, and a <em>ring buffer</em> for telemetry that overwrites its oldest sample. The Computing Algorithms notes add the decisive argument against growable arrays: a doubling array has amortised O(1) appends, but the occasional append costs O(n) and a heap allocation, and amortised is the wrong guarantee when every single tick has a deadline. Safety-critical coding rules in the "Power of Ten" style say the same: no dynamic allocation after initialisation, no recursion (so the worst-case stack depth can be computed), and a fixed upper bound on every loop.</p>
+        <div class="eq">\[ M_{ring}=N\,s,\qquad N=\Big\lceil\frac{T_{keep}}{\Delta t}\Big\rceil:\qquad 60\ \text{s at 10 Hz}\ \Rightarrow\ 600\times 41\ \text{B}\approx 24.6\ \text{kB} \]</div>
+        <p class="eq-note">A 41-byte telemetry sample (q, ω and τ as 32-bit floats plus a mode byte) kept for 60 s <span class="tag tag-derived">Derived</span> from <span class="tag tag-illustrative">Illustrative</span> choices.</p>
+        <p>This site's engine follows the same pattern where it matters for speed: <code>ADCS.sim.run</code> allocates its log arrays (\(n = T/\Delta t + 1\) rows) once before the loop starts, and the loop only fills them. Sanitizers belong in the test build, not the flight build, and they need care: the same notes measured AddressSanitizer at about 2.8 times the cost of each memory access, and found that at <code>-O1</code> the optimiser had already deleted three of five planted bugs before it could see them.</p>
+        <p>The rule reaches beyond control laws. An on-board planner needs memory-bounded search: the Intelligent Systems notes measured IDA* using 277 times less peak memory than A* for 1.076 times the work. A small neural network is surprisingly flight-friendly for the same reason; its forward pass is a fixed sequence of multiplies, and an example 6-16-3 network has exactly \((6+1)\cdot16+(16+1)\cdot3=163\) weights <span class="tag tag-illustrative">Illustrative</span>, a footprint known before launch.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ numbers -->
+    <section id="numbers" aria-labelledby="numbers-title">
+      <h2 id="numbers-title">Units, word sizes and fixed point</h2>
+      <div class="prose">
+        <p><strong>Units.</strong> The project states its thresholds in deg/s and integrates in rad/s <span class="tag tag-project">Project</span>, so one forgotten conversion is a factor of 57.3. The Design of Machine Elements notes warn about the same class of trap again and again (rev/min against rad/s is a factor of 9.55, N m against N mm a factor of 1000) and answer it with unit-suffixed names and a sanity check by a second route.</p>
+        <p><strong>Fixed point.</strong> A small processor may send the torque command as a 16-bit two's-complement number scaled to the limit (Q15):</p>
+        <div class="eq">\[ \Delta\tau=\frac{0.003\ \text{N m}}{2^{15}-1}=9.2\times10^{-8}\ \text{N m}\ \approx\ \frac{2\times10^{-5}\ \text{N m}}{218} \]</div>
+        <p>so quantisation is about 200 times finer than the disturbance bound and negligible <span class="tag tag-derived">Derived</span>. The arithmetic must <em>saturate</em> on overflow rather than wrap: a wrapped command turns the largest positive torque into the largest negative one. Number formats, two's complement and saturating arithmetic are typical content of a computer-architecture subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p><strong>Word sizes.</strong> The 8 s dwell is 80 ticks at 10 Hz, which fits a <code>uint8_t</code> (at most 255), but 400 ticks at 50 Hz, which needs a <code>uint16_t</code>; this site counts 800 ticks at 100 Hz and logs its counters as 16-bit integers <span class="tag tag-derived">Derived</span>. Counting integer ticks is exact; adding 0.01 s to a float 800 times gives 7.99999999999987, so a <code>t += dt</code> timer fires one step late, at 801 steps <span class="tag tag-derived">Derived</span>. A free-running 32-bit millisecond counter wraps after</p>
+        <div class="eq">\[ 2^{32}\ \text{ms}\approx 4.29\times10^{9}\ \text{ms}=49.7\ \text{days},\qquad \text{elapsed}=(\text{now}-\text{start})\bmod 2^{32} \]</div>
+        <p>and the Data Structures notes show why <em>unsigned</em> <code>now − start</code> stays correct across one wrap (modular arithmetic) while signed overflow is undefined behaviour in C and C++.</p>
+        <p><strong>Memory layout.</strong> MATLAB stores matrices column by column; C and C++ read a flat array row by row. Port the 3 × 6 LQR gain matrix as a flat array without transposing and attitude and rate gains land on the wrong axes. Nothing crashes. The same notes file this with their many "plausible wrong answer, no error" findings, and the widget shows what it does to a real run.</p>
+      </div>
+
+      <figure class="widget" id="w-gainport" aria-labelledby="w-gainport-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-gainport-title">Gain-matrix porting bug</h3>
+          <p class="widget-try"><strong>Try:</strong> switch between "Transpose first" and "Read as row-major", and find the zero where \(\tau_x\) should depend on \(\omega_x\). <strong>Notice:</strong> the same 18 numbers, read in the wrong order, remove all roll-rate damping: the error grows instead of settling and REQ-F2 and REQ-S1 fail, while REQ-S2 still passes because the wheels clip.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Both runs are preset T02 (LQR, safe mode off) through the full engine with <code>lqr.K</code> set explicitly. The correct K is the closed-form Riccati solution for the project's Q and R.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ concurrency -->
+    <section id="concurrency" aria-labelledby="concurrency-title">
+      <h2 id="concurrency-title">Shared state: the torn quaternion</h2>
+      <div class="prose">
+        <p>In a typical flight split, an estimator task writes the attitude \(q\) and other tasks (telemetry, the mode supervisor) read it. Four numbers cannot be written in one instruction. If the reader runs between the writer's first and last component, it gets a <dfn data-term="torn-read">torn read</dfn>: part old attitude, part new.</p>
+        <div class="eq">\[ q_{read}=\big[q_0^{new},\ q_1^{new},\ q_2^{old},\ q_3^{old}\big],\qquad \lVert q_{read}\rVert\neq1 \]</div>
+        <p>A non-unit quaternion is not an attitude at all, and every rotation built from it is skewed. The Systems Programming and Memory notes give the recipe for any race: it needs <em>shared mutable state</em>, <em>a writer</em> and <em>a non-atomic operation</em>, all at once, and every fix removes one of them. A <strong>double buffer</strong> writes into a hidden copy and publishes it with one atomic pointer swap. A <strong>sequence lock</strong> lets the reader detect a write in progress (an odd or changed counter) and retry. A <strong>message queue</strong> hands over immutable snapshots. A <strong>mutex</strong> works too, but makes the reader wait.</p>
+        <p>Testing cannot prove a race away. The notes ran the same racy code twice and lost 60,000 of 80,000 updates in one form and none in another, so a passing test proves nothing; stress tests with injected delays, thread sanitizers or model checking of the hand-off are needed. The Data Structures notes' lesson "individual operations are safe; sequences are not" applies equally to a fault word updated with <code>fault_word |= bit</code> from both an interrupt and the control task.</p>
+        <p>Locks bring their own failures. If the supervisor takes the mode lock and then the actuator lock while the controller takes them in the other order, the notes' measurement applies: inconsistent lock ordering deadlocked 39 of 40 trials, consistent ordering none. One global order (state, then mode, then actuator) fixes it. <strong>Priority inversion</strong> is the bridge to scheduling <span class="tag tag-extension">Extension</span>: a low-priority task holds a mutex the high-priority task needs while medium-priority tasks preempt the holder. A well-known Mars lander suffered repeated resets from exactly this until priority inheritance was switched on for the mutex.</p>
+      </div>
+
+      <figure class="widget" id="w-torn" aria-labelledby="w-torn-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-torn-title">Torn quaternion</h3>
+          <p class="widget-try"><strong>Try:</strong> start with "No protection", then try each fix and press "New interleaving" a few times. <strong>Notice:</strong> unprotected reads land off the \(\lVert q\rVert=1\) line whenever they hit the middle of a write; every protected mode gives zero torn reads, and they differ only in what the reader pays (waiting, retrying or a slightly older attitude).</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>The writer alternates between two valid attitudes, A = [1, 0, 0, 0] and B = [0.5, 0.5, 0.5, 0.5], writing one component per tick. The reader samples at seeded random ticks.</p>
+          <span class="tags"><span class="tag tag-illustrative">Illustrative</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ testing -->
+    <section id="testing" aria-labelledby="testing-title">
+      <h2 id="testing-title">Testing</h2>
+      <div class="prose">
+        <p>A plot of one good run tests one case. Code needs tests that check rules over many inputs. <strong>Property tests</strong> state a law that must hold for every input and then try hundreds of random ones:</p>
+        <div class="eq">\[ \lVert q\otimes p\rVert=1,\qquad C^{\top}C=I,\ \det C=+1,\qquad C(q)=C(-q),\qquad |\mathrm{sat}(u)|\le\tau_{max},\qquad \mathrm{sat}(\mathrm{sat}(u))=\mathrm{sat}(u) \]</div>
+        <p>Small, single-purpose functions with clear contracts, such as "<code>quat_to_dcm</code> of the identity is I" or "a DCM is orthonormal", and unit tests for them are typical content of a programming-principles subject <span class="tag tag-typical">Typical content</span>. Writing the last two laws as machine-checked contracts, in the same lemma style as "reversing a list twice gives the list", is typical content of a logic and automated-reasoning subject <span class="tag tag-typical">Typical content</span>. The widget below runs these laws against the site's real helpers and against deliberately broken copies, and shows an uncomfortable truth: some tests cannot see some bugs.</p>
+        <p><strong>Regression baselines.</strong> Store "golden" CSV outputs from a reviewed run with a fixed seed, and compare every new run with a tolerance (for example a relative 10⁻⁹), never with bit-equality. Tagging each automated test with the requirement it verifies, so the traceability table can be generated from the test suite, is typical content of a software-projects subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p><strong>Cross-implementation checks.</strong> To compare two implementations, such as the simulation and this site's engine, compare the <em>mode sequences</em> first. Run-length encode each mode log into tokens, then compute their edit distance by dynamic programming, as the Algorithms notes do with Levenshtein distance: 0 means identical mode histories, and otherwise the traceback points at the divergence, often a one-sample-late transition from a float comparison. Numeric channels are compared with tolerances. Two defensive habits from the Python Programming for Search and Constraint Satisfaction notes carry straight over: never mutate a collection while iterating over it, and make state canonical before comparing it (for a quaternion, flip the sign so the scalar part is not negative).</p>
+        <p>Inputs from people need tests too: range checks, NaN rejection and "fault window start before end" in the UI, and hashes of result files so published evidence can be checked, are typical content of a security-standards subject <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-proptest" aria-labelledby="w-proptest-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-proptest-title">Unit-test the helpers</h3>
+          <p class="widget-try"><strong>Try:</strong> press "Run all tests", then select any red cell to see its counterexample; run again with a new seed. <strong>Notice:</strong> each bug is caught by some tests and missed by others, and the <code>&gt;</code> versus <code>&gt;=</code> saturation bug passes everything because it never changes an output.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>The "Real" column calls <code>ADCS.quat</code>, <code>ADCS.dynamics.propagate</code> and <code>ADCS.ctrl.saturate</code>. The four broken copies are written in this page's script. Each test draws 200 seeded random inputs.</p>
+          <span class="tags"><span class="tag tag-site">Site default</span><span class="tag tag-project">Project</span></span>
+        </div>
+      </figure>
+
+      <figure class="widget" id="w-modediff" aria-labelledby="w-modediff-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-modediff-title">Mode-sequence diff</h3>
+          <p class="widget-try"><strong>Try:</strong> compare the reference T03 run with the half-step run, then with the re-implementation that has a units bug. <strong>Notice:</strong> halving the step changes no mode token (distance 0) and moves transitions by at most 0.01 s; the units bug deletes the first safe-mode episode, and the edit operations show exactly where.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Both sides are full engine runs of preset T03. The re-implementation with a units bug compares the rate in deg/s against thresholds it wrongly believes are in rad/s.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-site">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ reproducibility -->
+    <section id="reproducibility" aria-labelledby="reproducibility-title">
+      <h2 id="reproducibility-title">Reproducibility and tool independence</h2>
+      <div class="prose">
+        <p>A result that only runs on one machine is not evidence. The project hit this in its third iteration: the LQR design may need an optional toolbox. The decision was to save the fallback gain matrix in the parameter file, so the project runs without it; the lesson recorded was "tool independence improves reproducibility" <span class="tag tag-project">Project</span>. The risk register adds two more mitigations: fix the random seed for Monte Carlo, and write all outputs to CSV <span class="tag tag-project">Project</span>.</p>
+        <p>The same thinking runs through the rest of the project. The shared simulation, plotting and animation code avoids newer-only language features, ships its own degree–radian helpers for older installations, and falls back from MPEG-4 to Motion JPEG video when the newer format is not available <span class="tag tag-project">Project</span>. Pinning library versions so the Python mirror runs anywhere is the same dependency-management decision, and is typical content of a software-projects subject <span class="tag tag-typical">Typical content</span>. Good tabular data design (one row per trial, explicit units, a recorded seed) is typical content of an information-systems subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The Data Structures notes add two finer points. Write tables with a deterministic key and column order, so two runs produce byte-identical CSV files that can be diffed. And identify each run by a hash of its canonical parameters (J, limits, gains, Q and R, seed, dt), so a stale result is detectable. The birthday bound says how many bits that hash needs:</p>
+        <div class="eq">\[ n_{50\%}\approx1.18\sqrt{2^{b}}:\qquad b=32\ \Rightarrow\ n\approx7.7\times10^{4}\ \text{runs} \]</div>
+        <p>so a 32-bit run ID has an even chance of a collision after about 77,000 runs, and 64 bits or more is the safe choice <span class="tag tag-derived">Derived</span>.</p>
+        <p>This site applies the same rules. Every number comes from one parameter object; every scenario can be written into a link (the address after <code>#</code> encodes the scenario, so the simulator replays it exactly); the Monte Carlo generator is seeded and bit-exact with the reference implementation used to check this site; and every run can be downloaded as CSV from the simulator <span class="tag tag-site">Site default</span>.</p>
+      </div>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <p class="in-short"><strong>In short:</strong> the control laws are the easy part of flight software. The hard parts are structural: one interface and a table-driven mode manager, a preemptive loop with a computed worst case, no allocation or recursion after start-up, units and word sizes chosen on purpose, shared data that can never be read half-written, and several kinds of test, because each kind is blind to some bugs. The subjects below supplied those habits.</p>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

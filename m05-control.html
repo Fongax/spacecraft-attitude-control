@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 Control design · Attitude Control: The Big Picture</title>
+<meta name="description" content="Design detumble, PID and LQR controllers for a torque-limited double integrator and compare them on the project's criteria.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m05.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m05.js"></script>
+</head>
+<body data-page="m05">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 05</span>
+      <h1>Control design</h1>
+      <p class="module-purpose">Shape the closed-loop response with detumble, PID and LQR laws for a torque-limited double integrator, then compare them on the project's own criteria.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Design</span>
+        <span>About 40 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ plant -->
+    <section id="plant" aria-labelledby="plant-title">
+      <h2 id="plant-title">The plant</h2>
+      <div class="prose">
+        <p>Every controller is designed against a model of what it controls, the <em>plant</em>. Near the target attitude the rotation is slow and the angles are small. The gyroscopic term \(\omega\times J\omega\) is then second order in \(\omega\): its Jacobian at \(\omega=0\) is zero, so it vanishes from the linearisation, and each axis decouples into a <dfn data-term="double-integrator">double integrator</dfn>:</p>
+        <div class="eq">\[ J_i\,\ddot\theta_i=\tau_i,\qquad G_i(s)=\frac{\Theta_i(s)}{T_i(s)}=\frac{1}{J_i\,s^2} \]</div>
+        <p>Torque sets the angular acceleration, which integrates to a rate, which integrates to an angle. There is no natural stiffness pulling the craft back and no natural damping slowing it down: left alone, it keeps whatever rate it has. With \(J_y=0.040\) kg m² <span class="tag tag-project">Project</span>, a torque of 1 mN m gives 0.025 rad/s² of angular acceleration <span class="tag tag-derived">Derived</span>.</p>
+        <p>The first thing to try fails instructively. Proportional-only control, \(\tau=-K\theta\), gives the closed loop</p>
+        <div class="eq">\[ J s^2+K=0\quad\Longrightarrow\quad s=\pm j\sqrt{K/J} \]</div>
+        <p>Both poles sit on the imaginary axis for every \(K>0\): the craft oscillates for ever about the target with no decay. Rate feedback is mandatory. It also explains why Ziegler–Nichols tuning, which the Electromechanics notes teach for industrial loops, does not fit here. The method raises the gain until the loop just oscillates and reads off that "ultimate" gain and period, but a double integrator under P control oscillates at every gain, so there is no ultimate point to find. Laplace transforms, transfer functions and pole positions are typical content of a control-systems subject <span class="tag tag-typical">Typical content</span>, and Jacobian linearisation of a second calculus subject <span class="tag tag-typical">Typical content</span>. Try the P controller in the <a href="#w-step-lab">step-response lab</a> below to see the undamped oscillation.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ detumble -->
+    <section id="detumble" aria-labelledby="detumble-title">
+      <h2 id="detumble-title">Detumble</h2>
+      <div class="prose">
+        <p>When safe mode has to stop a tumble, attitude does not matter yet; only the rate does. The project's <dfn data-term="detumble">detumble</dfn> law is pure rate damping <span class="tag tag-project">Project</span>:</p>
+        <div class="eq">\[ \tau=-K_d\,\omega,\qquad K_d=0.05\ \text{N m s} \]</div>
+        <p class="eq-note">The gain value is a <span class="tag tag-site">Site default</span>; the notes give the law, not the number.</p>
+        <p>A Lyapunov argument proves it removes energy, with no linearisation at all. Take the rotational kinetic energy \(T=\tfrac12\omega^\mathsf{T}J\omega\) as the "energy-like" function and differentiate along Euler's equation:</p>
+        <div class="eq">\[ \dot T=\omega^\mathsf{T}J\dot\omega=\omega^\mathsf{T}\big(\tau-\omega\times J\omega\big)=\omega^\mathsf{T}\tau=-K_d\,\lVert\omega\rVert^2\le 0 \]</div>
+        <p>The gyroscopic term drops out because \(\omega\cdot(\omega\times J\omega)=0\): it moves momentum between axes but does no work. The proof even survives the ±3 mN m torque box <span class="tag tag-project">Project</span>: a clipped torque \(\tau_i=-\operatorname{sat}(K_d\,\omega_i)\) still has the opposite sign to \(\omega_i\), so \(\omega^\mathsf{T}\tau\) stays negative. The work–energy principle behind this is typical content of a kinematics-and-dynamics subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>Below saturation each axis decays exponentially, \(\omega(t)=\omega_0\,e^{-K_d t/J}\), with a time constant \(J/K_d\) of under a second on every axis; that is the same first-order shape as an R–L or R–C circuit, 63% of the way after one time constant. When \(K_d|\omega|\) exceeds the limit, the torque saturates and the rate falls in a straight line instead, so the minimum braking time is</p>
+        <div class="eq">\[ t_\text{brake}=\frac{J\,|\omega_0|}{\tau_{max}}\qquad\text{(1.4 s from 6 deg/s on the y axis)} \]</div>
+        <p class="eq-note">The 1.4 s is <span class="tag tag-derived">Derived</span> from \(J_y\), the 6 deg/s safe-mode entry threshold and \(\tau_{max}=0.003\) N m.</p>
+        <p>A constant disturbance keeps pushing, so the rate does not reach zero: it settles where damping balances the push, inside the ball \(\lVert\omega\rVert\le\lVert\tau_d\rVert/K_d\), here <span class="calc" data-calc="ball">0.031 deg/s</span> <span class="tag tag-derived">Derived</span>, far below the 0.5 deg/s exit threshold. And rate damping can never fix an attitude: as the Electromechanics notes put it, derivative action alone cannot remove a position error. Detumble leaves the craft pointing wherever it happens to stop, which is why safe mode continues into SAFE_HOLD before fine pointing resumes.</p>
+      </div>
+
+      <figure class="widget" id="w-energy" aria-labelledby="w-energy-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-energy-title">Energy during a detumble</h3>
+          <p class="widget-try"><strong>Try:</strong> hover or use the arrow keys on the plot to read the energy and the rate. <strong>Notice:</strong> while SAFE_DETUMBLE is active the energy only ever falls; the rate drops almost linearly while the torque is saturated, then exponentially.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Preset HIGHRATE from \(|\omega_0|=13.86\) deg/s, first 8 s, computed live with the site engine.</p>
+          <span class="tags"><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ pd -->
+    <section id="pd" aria-labelledby="pd-title">
+      <h2 id="pd-title">Stiffness and damping</h2>
+      <div class="prose">
+        <p>To hold an attitude the controller must supply what the plant lacks: a stiffness that pulls the angle back and a damping that stops it overshooting. A proportional-derivative law does both, and the closed loop becomes the familiar mass–spring–damper:</p>
+        <div class="eq">\[ J\ddot\theta+K_d\dot\theta+K_{p\theta}\theta=0,\qquad \omega_n=\sqrt{\frac{K_{p\theta}}{J}},\qquad \zeta=\frac{K_d}{2\sqrt{K_{p\theta}J}} \]</div>
+        <p>The <dfn data-term="natural-frequency">natural frequency</dfn> \(\omega_n\) (rad/s) sets the speed and the <dfn data-term="damping-ratio">damping ratio</dfn> \(\zeta\) the shape: \(\zeta<1\) overshoots and rings, \(\zeta=1\) is critically damped, \(\zeta>1\) creeps in without overshoot. For an underdamped loop the 2% settling time is about \(4/(\zeta\omega_n)\). The damped oscillator and these formulas are typical content of a first-year physics subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>One subtlety links this to the project's quaternion law. The controller acts on the error quaternion's vector part, and for small angles \(q_v\approx\theta/2\). A gain \(K_p\) on \(q_v\) is therefore a gain \(K_p/2\) on the angle:</p>
+        <div class="eq">\[ K_{p\theta}=\tfrac12 K_p \]</div>
+        <p>With the site defaults \(K_p=0.02\) and \(K_d=0.08\) <span class="tag tag-site">Site default</span>, the y axis gets \(\omega_n=0.5\) rad/s and \(\zeta=2.0\) <span class="tag tag-derived">Derived</span>. That is deliberately overdamped, matching the project's description of its gains as "intentionally conservative" <span class="tag tag-project">Project</span>. The payoff shows in the T01 slew: the rate peaks at 4.32 deg/s <span class="tag tag-derived">Derived</span> and never comes near the 6 deg/s safe-mode threshold.</p>
+        <p>Aircraft get stiffness and damping for free: the airflow over the tail pulls the nose back and resists pitching. Static and dynamic stability, and the short-period mode's handling-quality targets in \((\zeta,\omega_n)\), are typical content of aerodynamics subjects <span class="tag tag-typical">Typical content</span>. In orbit there is no air, so \(K_p\) and \(K_d\) must supply both <span class="tag tag-analogy">Analogy</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-step-lab" aria-labelledby="w-step-lab-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-step-lab-title">Single-axis step-response lab</h3>
+          <p class="widget-try"><strong>Try:</strong> start with P only, then PD, then lower \(K_d\) until \(\zeta<1\); finally switch the disturbance on and compare the error at 150 s for PD and PID. <strong>Notice:</strong> P never settles and low damping overshoots; under the disturbance PD stops at the predicted \(\tau_d/K_{p\theta}\), while the integral removes that error, slowly, because at the site gains its pole has a time constant of about 16 s.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>One axis, \(\theta\) regulated from the step angle to zero for 150 s with <code>ADCS.sim.singleAxis</code> (RK4, dt = 0.01 s). Gains act on the angle: \(K_{p\theta}=K_p/2\), \(K_{i\theta}=K_i/2\). The PID integrator uses the site's 10% clamp.</p>
+          <span class="tags"><span class="tag tag-site">Site default</span><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ pid -->
+    <section id="pid" aria-labelledby="pid-title">
+      <h2 id="pid-title">Integral action and windup</h2>
+      <div class="prose">
+        <p>A PD loop holds the target only if nothing pushes. A constant disturbance torque \(\tau_d\) must be balanced by a constant control torque, and a PD law can only produce one from a constant error. The final value theorem gives that error:</p>
+        <div class="eq">\[ \theta_{ss}=\frac{\tau_d}{K_{p\theta}} \]</div>
+        <p>With the project disturbance \([2,\,-1,\,1.5]\times10^{-5}\) N m <span class="tag tag-project">Project</span> and the site gains, that is about 0.15° of attitude error <span class="tag tag-derived">Derived</span>: inside the 2° requirement, but permanent. Adding an integral term, which turns PD into <dfn data-term="pid">PID</dfn>, lets the controller build up exactly the torque the disturbance needs while the error goes to zero. Steady-state error and disturbance rejection are typical content of a control-systems subject <span class="tag tag-typical">Typical content</span>; the Electromechanics notes cover the same P, I and D actions on a motor rig, including "a P controller can't hold a load at zero error".</p>
+        <p>The integral adds a third pole, so stability is no longer automatic. The characteristic equation is a cubic and the Routh–Hurwitz test gives the condition:</p>
+        <div class="eq">\[ J s^3+K_d s^2+K_{p\theta}s+K_{i\theta}=0\quad\text{is stable}\iff K_d K_{p\theta}>J K_{i\theta} \]</div>
+        <p class="eq-note">With the site gains on the y axis: <span class="calc" data-calc="rh">\(K_dK_{p\theta}=8\times10^{-4}\) against \(JK_{i\theta}=4\times10^{-5}\), a factor of 20 to spare</span> <span class="tag tag-derived">Derived</span>.</p>
+        <p>The integral's weakness is <dfn data-term="integral-windup">windup</dfn>. During a large slew the error stays big for a long time and the integrator keeps charging; by the time the craft reaches the target, the stored integral pushes it straight past. On the 37° T01 slew with the site default \(K_i=0.002\), the clamped integrator settles in 18.3 s; without the clamp it takes between 38 and 68 s for any \(K_i\) from 0.0005 to 0.01 <span class="tag tag-derived">Derived</span>. The <dfn data-term="anti-windup">anti-windup</dfn> options:</p>
+        <ul>
+          <li><strong>Mode gating:</strong> integrate only in NOMINAL, the project's choice <span class="tag tag-project">Project</span>.</li>
+          <li><strong>Clamping:</strong> bound the integral term, \(|K_i I|\le 0.1\,\tau_{max}\), this site's addition <span class="tag tag-site">Site default</span>.</li>
+          <li><strong>Conditional integration:</strong> freeze the integrator while the actuator is saturated.</li>
+          <li><strong>Reset on entry:</strong> zero the integrator when the controller is re-enabled.</li>
+        </ul>
+        <p>The Electromechanics notes name the same fixes. A machine-learning echo: an LSTM cell is a gated integrator, and its input gate plays the role of anti-windup, while a leaky integrator cannot remove a steady error <span class="tag tag-analogy">Analogy</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-poles" aria-labelledby="w-poles-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-poles-title">Pole viewer</h3>
+          <p class="widget-try"><strong>Try:</strong> lower \(K_d\) below 0.04 until the poles leave the real axis, then switch to PID and raise \(K_{i\theta}\) past the boundary \(K_dK_{p\theta}/J\) printed beside the badge. <strong>Notice:</strong> the Routh–Hurwitz badge fails exactly there, as a pole pair crosses the imaginary axis; the blue locus is where the poles go as \(K_{p\theta}\) grows; the green ring is the LQR design for the same axis.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Roots of \(Js^2+K_ds+K_{p\theta}\) (PD) or \(Js^3+K_ds^2+K_{p\theta}s+K_{i\theta}\) (PID) from <code>ADCS.vec.polyRoots</code>. Locus: \(K_{p\theta}\) from 0 to 3× the current value.</p>
+          <span class="tags"><span class="tag tag-derived">Derived</span><span class="tag tag-analogy">Analogy</span></span>
+        </div>
+      </figure>
+
+      <figure class="widget" id="w-windup" aria-labelledby="w-windup-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-windup-title">Windup demo</h3>
+          <p class="widget-try"><strong>Try:</strong> in tab A raise \(K_{i\theta}\); in tab B switch the clamp off and compare the two integrator gates. <strong>Notice:</strong> the naive integrator overshoots badly and freezing it only while saturated barely helps here; without the clamp, integrating during safe mode makes T03 trip safe mode again and again.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Tab A: one axis, 30° step, ±3 mN m saturation, \(K_{p\theta}\) and \(K_d\) at site defaults. Tab B: the full engine on preset T03 (safe mode, fault from 45 to 60 s).</p>
+          <span class="tags"><span class="tag tag-site">Site default</span><span class="tag tag-project">Project</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ quaternion-pid -->
+    <section id="quaternion-pid" aria-labelledby="quaternion-pid-title">
+      <h2 id="quaternion-pid-title">The quaternion-error PID</h2>
+      <div class="prose">
+        <p>The project's nominal controller works directly on quaternions <span class="tag tag-project">Project</span>. It first forms the <dfn data-term="error-quaternion">error quaternion</dfn>, the rotation from the reference to the current attitude, flipping its sign if needed so that it describes the shorter way round, and then applies PID to its vector part:</p>
+        <div class="eq">\[ q_e=q_{ref}^{*}\otimes q\ \ (\text{negate if } q_{e,0}<0),\qquad \tau=-K_p\,q_{e,v}-K_d\,\omega-K_i\!\int q_{e,v}\,dt \]</div>
+        <p>For small errors \(q_{e,v}\approx\theta/2\) on each axis, so every single-axis result above carries over with \(K_{p\theta}=K_p/2\). For large errors the law stays sensible: \(|q_{e,v}|=\sin(\theta_e/2)\) never exceeds 1, so the proportional torque is bounded even at 180°.</p>
+        <p>Notice what multiplies \(K_d\): the measured body rate \(\omega\), not the time derivative of the error. This is <em>derivative on measurement</em>. When the reference attitude steps, the error jumps but \(\omega\) does not, so there is no spike of torque, the "derivative kick" that the Electromechanics notes warn about. The integral accumulates only in NOMINAL <span class="tag tag-project">Project</span>, and this site also clamps it <span class="tag tag-site">Site default</span>. In code, one control step is short:</p>
+        <pre class="code-block" tabindex="0" role="region" aria-label="Code: one step of the quaternion-error PID"><code>let qe = quat.mul(quat.conj(qRef), q);          // error quaternion
+if (qe[0] &lt; 0) qe = qe.map(c =&gt; -c);              // shortest rotation
+const qv = [qe[1], qe[2], qe[3]];
+for (let i = 0; i &lt; 3; i++) {
+  tauCmd[i] = -Kp * qv[i] - Kd * w[i] - Ki * I[i];  // derivative on measurement
+  if (mode === NOMINAL) I[i] = clamp(I[i] + qv[i] * dt, -Imax, Imax);
+}
+const tau = tauCmd.map(t =&gt; clamp(t, -tauMax, tauMax));   // per-axis saturation</code></pre>
+        <p>Hobby and professional drone flight controllers use the same structure, an angle or quaternion-error PID with anti-windup and output limits, nested inside a faster rate loop; flight controllers are typical content of a remotely piloted aircraft subject <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ lqr -->
+    <section id="lqr" aria-labelledby="lqr-title">
+      <h2 id="lqr-title">LQR</h2>
+      <div class="prose">
+        <p>PID gains are chosen by feel. The <dfn data-term="lqr">linear-quadratic regulator</dfn> chooses them by optimisation: state what you care about as a cost and let mathematics find the best linear feedback. The project designed its LQR on the small-angle state \(x=[\theta,\ \omega]\), with \(\theta\approx2q_{e,v}\) <span class="tag tag-project">Project</span>, and the cost</p>
+        <div class="eq">\[ \mathcal{J}=\int_0^\infty\big(x^\mathsf{T}Qx+u^\mathsf{T}Ru\big)\,dt,\qquad Q=\operatorname{diag}(2,2,2,\,0.15,0.15,0.15),\quad R=2000\,I \]</div>
+        <p class="eq-note">\(Q\) and \(R\) are the project's weights <span class="tag tag-project">Project</span>. A large \(R\) says "torque is expensive", which keeps the gains gentle.</p>
+        <p>The optimal law is \(u=-Kx\) with \(K=R^{-1}B^\mathsf{T}P\), where \(P\) solves the continuous algebraic <dfn data-term="riccati">Riccati</dfn> equation</p>
+        <div class="eq">\[ A^\mathsf{T}P+PA-PBR^{-1}B^\mathsf{T}P+Q=0,\qquad A=\begin{bmatrix}0&1\\0&0\end{bmatrix},\ B=\begin{bmatrix}0\\1/J_i\end{bmatrix}\ \text{per axis} \]</div>
+        <p>Because \(J\), \(Q\) and \(R\) are all diagonal, the 6-state problem splits into three independent 2-state problems, and each has a closed-form answer:</p>
+        <div class="eq">\[ K_\theta=\sqrt{\frac{q_1}{r}}=0.0316\ \tfrac{\text{N m}}{\text{rad}},\qquad K_\omega=\sqrt{\frac{2J_i\sqrt{q_1r}+q_2}{r}}=0.0478,\ 0.0510,\ 0.0407\ \tfrac{\text{N m s}}{\text{rad}} \]</div>
+        <p>The attitude gain is the same on every axis and the rate gain grows with inertia. The closed loops have \(\omega_n=0.95,\ 0.89,\ 1.12\) rad/s and \(\zeta\approx0.72\) <span class="tag tag-derived">Derived</span>: a classic, lightly underdamped design. In the T01/T02 comparison it settles in 5.39 s against the site PID's 18.33 s <span class="tag tag-derived">Derived</span>. The y-axis poles sit near \(s\approx-0.64\pm0.62j\); on x they are \(-0.68\pm0.66j\) <span class="tag tag-derived">Derived</span>. The project also stored a fallback gain matrix so that it could run without a control toolbox <span class="tag tag-project">Project</span>; this site always computes the gains from \(Q\) and \(R\).</p>
+        <p>The whole design rests on \(\theta\approx2q_{e,v}\). Since \(2\sin(\theta/2)\) replaces \(\theta\), the approximation is 0.8% off at 25° and 17% off at 120° <span class="tag tag-derived">Derived</span>: good near the target, poor in a big slew. Navigators know the same trade as the 1-in-60 rule, typical content of a navigation subject <span class="tag tag-typical">Typical content</span>. State-space feedback \(u=-Kx\) and pole placement are typical content of a control-systems subject <span class="tag tag-typical">Typical content</span>; LQR is the optimal-control step beyond them.</p>
+      </div>
+
+      <figure class="widget" id="w-lqr" aria-labelledby="w-lqr-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-lqr-title">LQR tuner and Bellman sweep</h3>
+          <p class="widget-try"><strong>Try:</strong> lower \(r\) to make torque cheap, then raise \(q_\omega\); finally press "Run Bellman sweep". <strong>Notice:</strong> cheaper torque gives faster gains but a smaller saturation angle and a peak rate that can break the 15 deg/s limit; the sweep's gains settle long before its values do.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>The run is preset T02 (LQR, safe mode off, 37° initial error) with the chosen weights, on the full nonlinear engine. The sweep uses \(J_y\).</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ bellman -->
+    <section id="bellman" aria-labelledby="bellman-title">
+      <h2 id="bellman-title">LQR as dynamic programming</h2>
+      <div class="prose">
+        <p>There is a second way to reach the same gain, and it connects control to planning and reinforcement learning. It works in discrete time, so first sample one axis with the torque held over each step of length \(\Delta t\). The double integrator then moves exactly as</p>
+        <div class="eq">\[ \begin{gathered} x_{k+1}=A_d\,x_k+B_d\,u_k,\\[4pt] A_d=\begin{bmatrix}1&\Delta t\\0&1\end{bmatrix},\qquad B_d=\begin{bmatrix}\Delta t^2/(2J_i)\\ \Delta t/J_i\end{bmatrix} \end{gathered} \]</div>
+        <p>\(A_d\) and \(B_d\) replace the continuous \(A\) and \(B\) above. The cost is charged per step, each step paying its share of the integral:</p>
+        <div class="eq">\[ \begin{gathered} Q_d=Q\,\Delta t,\qquad R_d=R\,\Delta t,\\[2pt] Q=\operatorname{diag}(2,\ 0.15),\quad R=2000 \end{gathered} \]</div>
+        <p class="eq-note">The per-axis weights are the project's <span class="tag tag-project">Project</span>.</p>
+        <p>Call \(V(x)\) the cost-to-go: the least total cost from state \(x\) onwards. <dfn data-term="bellman">Bellman's principle</dfn> says an optimal path is optimal from every point along it, so one step of cost plus the cost-to-go from wherever that step lands must be minimised:</p>
+        <div class="eq">\[ V(x)=\min_u\Big[x^\mathsf{T}Q_d\,x+u^\mathsf{T}R_d\,u+V\big(A_dx+B_du\big)\Big] \]</div>
+        <p>For linear dynamics and quadratic cost, a quadratic guess \(V(x)=x^\mathsf{T}Px\) stays quadratic after the minimisation, and repeating the step from \(P_0=0\) is exactly the discrete Riccati recursion:</p>
+        <div class="eq">\[ \begin{aligned} K_k&=\big(R_d+B_d^\mathsf{T}P_kB_d\big)^{-1}B_d^\mathsf{T}P_kA_d,\\ P_{k+1}&=Q_d+A_d^\mathsf{T}P_k\big(A_d-B_dK_k\big) \end{aligned} \]</div>
+        <p>Updating \(P\) is <em>value iteration</em>; reading off \(K_k\), the greedy action for the current \(V\), is <em>policy extraction</em>. Markov decision processes, Bellman equations, value iteration and policy extraction are all in the Intelligent Systems notes, and the Algorithms notes cover dynamic programming: the backward Riccati sweep is a table filled in from the horizon. LQR is the rare case where the Bellman equation has an exact solution, which makes it the provable-optimum baseline any learned controller, such as the Q-learning and actor-critic methods in the reinforcement-learning notes, should be measured against.</p>
+        <p>On the y axis at \(\Delta t=0.1\) s the sweep behaves like this <span class="tag tag-derived">Derived</span>:</p>
+      </div>
+      <div class="scroll-x" tabindex="0" role="region" aria-label="Bellman sweep convergence on the y axis">
+        <table class="table compact">
+          <caption>Value iteration on the y axis, Δt = 0.1 s, from P₀ = 0</caption>
+          <thead><tr><th scope="col">Sweeps</th><th scope="col" class="num">K<sub>θ</sub> (N m/rad)</th><th scope="col" class="num">K<sub>ω</sub> (N m s/rad)</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">10</th><td class="num">0.00965</td><td class="num">0.00783</td></tr>
+            <tr><th scope="row">50</th><td class="num">0.02925</td><td class="num">0.04891</td></tr>
+            <tr><th scope="row">100</th><td class="num">0.02967</td><td class="num">0.04939</td></tr>
+            <tr><th scope="row">230 (P converged to 10⁻¹³)</th><td class="num">0.02967</td><td class="num">0.04939</td></tr>
+            <tr><th scope="row">Continuous closed form</th><td class="num">0.03162</td><td class="num">0.05104</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>Two lessons. The <em>policy converges before the values</em>: the gain is settled to four digits by about 100 sweeps while \(P\) keeps creeping until 230. And the discrete answer sits a little below the continuous one because a 0.1 s step is coarse; at \(\Delta t=0.01\) s the sweep converges to \([0.03142,\ 0.05087]\), within 1% of the closed form <span class="tag tag-derived">Derived</span>. The Kalman filter runs the very same Riccati recursion forward in time to weigh sensor data; see <a href="m07-sensors.html">module 07</a> <span class="tag tag-extension">Extension</span>. Run the sweep yourself in the <a href="#w-lqr">tuner above</a>.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ saturation -->
+    <section id="saturation" aria-labelledby="saturation-title">
+      <h2 id="saturation-title">When linear analysis stops</h2>
+      <div class="prose">
+        <p>Everything above assumed the actuator delivers whatever torque the law asks for. It cannot: each axis is limited to ±0.003 N m <span class="tag tag-project">Project</span>. The LQR attitude term alone reaches that limit at</p>
+        <div class="eq">\[ K_\theta\,|\theta|=\tau_{max}\quad\Longrightarrow\quad|\theta|=\frac{\tau_{max}}{K_\theta}=\frac{0.003}{0.0316}\ \text{rad}=5.44^\circ \]</div>
+        <p>Beyond about 5.4° <span class="tag tag-derived">Derived</span> the loop is no longer linear, and \(\omega_n\) and \(\zeta\) stop describing it. In the 37° T02 slew the actuator sits at its limit and accelerates the craft for longer than the linear design expects, so the rate peaks at 14.28 deg/s, a margin of only 0.72 deg/s to the 15 deg/s limit of REQ-S1 <span class="tag tag-derived">Derived</span>. Switch safe mode on (preset LQRSAFE) and that rate trips the 6 deg/s entry threshold at 0.64 s <span class="tag tag-derived">Derived</span>: the linear design and the mode logic collide. The conservative PID peaks at 4.32 deg/s on the same slew <span class="tag tag-derived">Derived</span>.</p>
+        <p>What is the best possible slew under a hard torque limit? Accelerate at full torque for half the angle and brake at full torque for the other half, a <em>bang-bang</em> manoeuvre. For a rest-to-rest rotation by \(\Phi\):</p>
+        <div class="eq">\[ t_{min}=2\sqrt{\frac{\Phi\,J}{\tau_{max}}}\qquad(30^\circ\ \text{on the y axis in about 5.3 s}) \]</div>
+        <p>The 5.3 s is <span class="tag tag-derived">Derived</span>. It is a lower bound no linear controller can beat, and a useful yardstick for the settling times in the next section. Saturation also bends the torque vector when several axes clip at once; <a href="m06-actuators.html#allocation">module 06</a> shows how. Machine-design practice treats a limit like this as a designed, predictable feature. Backlash and friction are the nonlinearities to watch next, because with integral action they can make a loop limit-cycle. TCP congestion control offers a parallel from the Networking notes: the sender's rate is the minimum of two windows, a saturation in a delayed feedback loop <span class="tag tag-analogy">Analogy</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ compare -->
+    <section id="compare" aria-labelledby="compare-title">
+      <h2 id="compare-title">Comparing controllers</h2>
+      <div class="prose">
+        <p>Which controller is better depends on what you value, so the project compared them on five criteria <span class="tag tag-project">Project</span>:</p>
+        <ul>
+          <li><strong>Settling time:</strong> the first time after which attitude error stays below 2° and rate below 0.5 deg/s.</li>
+          <li><strong>Peak error:</strong> the largest attitude error during the run.</li>
+          <li><strong>Maximum torque:</strong> the largest actuator command after saturation.</li>
+          <li><strong>Control effort:</strong> the integral of squared torque, \(\int\lVert\tau\rVert^2dt\), in N² m² s.</li>
+          <li><strong>Safety margin:</strong> the distance from the 15 deg/s rate limit.</li>
+        </ul>
+        <p>The project's verdict was qualitative: LQR is "cleaner near the reference attitude", while PID is "more intuitive and easier to tune but requires anti-windup protection" <span class="tag tag-project">Project</span>. A weighted decision matrix makes such a verdict explicit: score each option on each criterion, weight the criteria by what the mission values, and add up. Pugh and weighted decision matrices are typical content of a mechanical engineering design subject <span class="tag tag-typical">Typical content</span>. The matrix below runs both controllers on the T01 slew with safe mode off and lets you choose the weights. Notice that the answer flips with them: the weights <em>are</em> the decision.</p>
+      </div>
+
+      <figure class="widget" id="w-decision" aria-labelledby="w-decision-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-decision-title">Controller decision matrix</h3>
+          <p class="widget-try"><strong>Try:</strong> press "Favour safety margin", then "Favour fast settling", then set your own weights. <strong>Notice:</strong> the same two runs produce opposite winners; PID wins on margin and effort, LQR on settling.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Presets T01 (PID) and T02 (LQR), safe mode off, computed live. Scores are min–max normalised per criterion: the better option scores 1, the worse 0, a tie gives both 1.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <p class="in-short"><strong>In short:</strong> each axis is a double integrator that needs both stiffness and damping from the controller. Detumble removes energy by construction; PID adds stiffness and an integral that must be protected from windup; LQR derives its gains from a cost, by Riccati or by Bellman's value iteration. The ±3 mN m limit ends the linear story above about 5.4° of error, and which controller is "best" depends on the weights you give the project's five criteria.</p>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

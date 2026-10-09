@@ -1,0 +1,147 @@
+/*
+ * learn.css: the learning path (learn.html). Every rule is scoped under body[data-page="learn"].
+ */
+
+body[data-page="learn"] .learn-section { margin-block-start: var(--s7); }
+body[data-page="learn"] .learn-section > h2 { margin-block-start: 0; }
+
+/* ================================================================ progress */
+body[data-page="learn"] .learn-progress { margin-block: var(--s5) var(--s4); }
+body[data-page="learn"] .learn-progress-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s1) var(--s4); }
+body[data-page="learn"] .learn-progress-text { margin: 0; font-size: var(--fs-lg); font-weight: 700; font-variant-numeric: tabular-nums; }
+body[data-page="learn"] .learn-total { margin: 0; font-size: var(--fs-sm); }
+body[data-page="learn"] .learn-progress .progress-bar { height: 10px; margin-block: var(--s3); border-radius: 5px; }
+body[data-page="learn"] .learn-progress .progress-bar > span { background: var(--ok); transition: width 0.3s ease-out; }
+body[data-page="learn"] .learn-progress-actions { margin-block: var(--s3) var(--s1); }
+body[data-page="learn"] .learn-continue { display: inline-flex; min-width: 0; max-width: 100%; }
+body[data-page="learn"] .learn-continue .btn { white-space: normal; text-align: start; padding-block: var(--s1); }
+body[data-page="learn"] .learn-continue .btn svg { width: 18px; height: 18px; }
+body[data-page="learn"] .learn-done { font-weight: 600; }
+body[data-page="learn"] .learn-note { margin: 0; font-size: var(--fs-sm); }
+
+/* ================================================================ phase strip */
+body[data-page="learn"] .phase-strip ol {
+  list-style: none;
+  margin: var(--s5) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) 0;
+}
+body[data-page="learn"] .phase-strip li { display: flex; align-items: center; margin: 0; }
+body[data-page="learn"] .phase-strip a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 82px;
+  min-height: var(--hit);
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r2);
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.3;
+  text-decoration: none;
+}
+body[data-page="learn"] .phase-strip a:hover { border-color: var(--accent); }
+body[data-page="learn"] .phase-strip a.is-done { border-color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok); }
+body[data-page="learn"] .phase-name { font-weight: 700; }
+body[data-page="learn"] .phase-range { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-2); }
+body[data-page="learn"] .phase-read { font-size: var(--fs-xs); color: var(--text-2); }
+body[data-page="learn"] .phase-strip a.is-done .phase-read { color: var(--ok); font-weight: 700; }
+body[data-page="learn"] .phase-arrow { padding-inline: var(--s1); color: var(--text-2); }
+
+/* ================================================================ the path */
+body[data-page="learn"] .phase { margin-block-start: var(--s6); }
+body[data-page="learn"] .phase-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s3); margin: 0 0 var(--s1); }
+body[data-page="learn"] .phase-kicker { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); }
+body[data-page="learn"] .phase-label { font-size: var(--fs-xl); }
+body[data-page="learn"] .phase-span { font-size: var(--fs-sm); font-weight: 500; color: var(--text-2); }
+body[data-page="learn"] .phase-blurb { margin-block-end: var(--s4); color: var(--text-2); max-width: 72ch; }
+body[data-page="learn"] .steps { list-style: none; margin: 0; padding: 0; }
+body[data-page="learn"] .step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: var(--s3);
+  margin: 0;
+  padding-block-end: var(--s4);
+}
+body[data-page="learn"] .step::before {
+  content: "";
+  position: absolute;
+  left: 23px;
+  top: 48px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-strong);
+}
+body[data-page="learn"] .step:last-child { padding-block-end: 0; }
+body[data-page="learn"] .step:last-child::before { display: none; }
+body[data-page="learn"] .step-marker {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+body[data-page="learn"] .step-marker svg { display: none; width: 22px; height: 22px; }
+body[data-page="learn"] .step.is-ext .step-marker { border-style: dashed; border-color: var(--ext); }
+body[data-page="learn"] .step.is-read .step-marker { background: var(--ok); border-color: var(--ok); border-style: solid; color: var(--accent-contrast); }
+body[data-page="learn"] .step.is-read .step-num { display: none; }
+body[data-page="learn"] .step.is-read .step-marker svg { display: block; }
+body[data-page="learn"] .step-card {
+  min-width: 0;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  --scroll-bg: var(--surface);
+}
+body[data-page="learn"] .step.is-ext .step-card { border-style: dashed; border-color: var(--ext); background: var(--ext-bg); --scroll-bg: var(--ext-bg); }
+body[data-page="learn"] .step.is-read .step-card { box-shadow: inset 4px 0 0 var(--ok), var(--shadow); }
+body[data-page="learn"] .step-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); margin: 0; font-size: var(--fs-md); }
+body[data-page="learn"] .step-title a { text-decoration-thickness: 1px; }
+body[data-page="learn"] .step-title-num { font-family: var(--font-mono); color: var(--text-2); }
+body[data-page="learn"] .step-summary { margin: var(--s1) 0 var(--s2); }
+body[data-page="learn"] .step-use { margin-block-end: var(--s2); font-size: var(--fs-sm); }
+body[data-page="learn"] .step-meta {
+  list-style: none;
+  margin: 0 0 var(--s1);
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+body[data-page="learn"] .step-meta li { margin: 0; }
+body[data-page="learn"] .step-meta a { white-space: nowrap; }
+body[data-page="learn"] .step-read { display: inline-flex; align-items: center; gap: var(--s2); min-height: var(--hit); font-weight: 600; cursor: pointer; }
+body[data-page="learn"] .step-read input { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); }
+@media (max-width: 599px) {
+  body[data-page="learn"] .step { grid-template-columns: 36px minmax(0, 1fr); gap: var(--s2); }
+  body[data-page="learn"] .step::before { left: 17px; top: 36px; }
+  body[data-page="learn"] .step-marker { width: 36px; height: 36px; font-size: var(--fs-sm); }
+  body[data-page="learn"] .step-card { padding: var(--s3); }
+}
+
+/* ================================================================ routes and anatomy */
+body[data-page="learn"] .route h3 { margin-block-start: 0; }
+body[data-page="learn"] .route-why { margin-block-end: var(--s2); color: var(--text-2); }
+body[data-page="learn"] .route-steps { list-style: none; margin: 0 0 var(--s2); padding: 0; display: flex; flex-wrap: wrap; align-items: center; }
+body[data-page="learn"] .route-steps li { display: flex; align-items: center; margin: 0; }
+body[data-page="learn"] .route-steps li + li::before { content: "\2192"; margin-inline: var(--s2); color: var(--text-2); }
+body[data-page="learn"] .route-steps a { display: inline-flex; align-items: center; min-height: var(--hit); font-weight: 600; }
+body[data-page="learn"] .route-num { font-family: var(--font-mono); margin-inline-end: 0.3em; }
+body[data-page="learn"] .route-time { margin: 0; font-size: var(--fs-sm); }
+body[data-page="learn"] .anatomy li { margin-block: var(--s2); }

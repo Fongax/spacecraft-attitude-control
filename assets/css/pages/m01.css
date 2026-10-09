@@ -1,0 +1,199 @@
+/* m01.css: module 01 (requirements). Everything is scoped under body[data-page="m01"]. */
+
+/* ---------------------------------------------------------------- shared bits */
+body[data-page="m01"] .req-id { font-family: var(--font-mono); font-weight: 700; white-space: nowrap; }
+body[data-page="m01"] .req-class {
+  display: inline-block;
+  padding: 0 0.5em;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 650;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+body[data-page="m01"] .req-class-safety { border-color: var(--bad); color: var(--bad); }
+body[data-page="m01"] .req-class-liveness { border-color: var(--accent); color: var(--accent); }
+body[data-page="m01"] .table caption .tag,
+body[data-page="m01"] .table th .tag { margin-inline-start: 0.25em; vertical-align: middle; }
+body[data-page="m01"] .req-table td:nth-child(3) { min-width: 16em; }
+body[data-page="m01"] .req-table td:nth-child(4),
+body[data-page="m01"] .req-table td:nth-child(5) { min-width: 12em; }
+body[data-page="m01"] .in-short { margin-block-start: var(--s6); }
+body[data-page="m01"] .in-short h2 { margin-block-start: 0; }
+
+/* ---------------------------------------------------------------- W1.1 linter */
+body[data-page="m01"] .lint-controls { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 700px) {
+  body[data-page="m01"] .lint-controls { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
+}
+body[data-page="m01"] .lint-field textarea {
+  display: block;
+  width: 100%;
+  min-height: 5.2em;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r1);
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.5;
+  resize: vertical;
+}
+body[data-page="m01"] .lint-presets-label { margin: 0 0 var(--s1); }
+body[data-page="m01"] .lint-presets { margin-block-end: var(--s1); }
+body[data-page="m01"] #lint-note { margin-block-end: var(--s3); }
+body[data-page="m01"] .lint-summary { margin: 0 0 var(--s2); font-size: var(--fs-sm); }
+body[data-page="m01"] .lint-count { font-weight: 700; }
+body[data-page="m01"] .lint-count.has-flags { color: var(--warn); }
+body[data-page="m01"] .lint-count.clean { color: var(--ok); }
+body[data-page="m01"] .lint-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s1); }
+body[data-page="m01"] .lint-item {
+  display: flex;
+  gap: var(--s2);
+  align-items: flex-start;
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--border);
+  border-inline-start-width: 4px;
+  border-radius: var(--r1);
+  font-size: var(--fs-sm);
+}
+body[data-page="m01"] .lint-item svg { flex: none; width: 18px; height: 18px; margin-block-start: 0.15em; }
+body[data-page="m01"] .lint-item.is-ok { border-inline-start-color: var(--ok); }
+body[data-page="m01"] .lint-item.is-ok svg { color: var(--ok); }
+body[data-page="m01"] .lint-item.is-flag { border-inline-start-color: var(--warn); }
+body[data-page="m01"] .lint-item.is-flag svg { color: var(--warn); }
+body[data-page="m01"] .lint-detail { color: var(--text-2); }
+
+/* ---------------------------------------------------------------- W1.2 traceability matrix */
+body[data-page="m01"] .trace-matrix { width: auto; min-width: 100%; }
+body[data-page="m01"] .trace-matrix th, body[data-page="m01"] .trace-matrix td { vertical-align: middle; }
+body[data-page="m01"] .trace-matrix tbody th[scope="row"] { white-space: nowrap; }
+body[data-page="m01"] .trace-matrix tbody th .req-class { margin-inline-start: var(--s1); }
+body[data-page="m01"] .trace-test { text-align: center; font-family: var(--font-mono); }
+body[data-page="m01"] .trace-td { text-align: center; padding: 2px; }
+body[data-page="m01"] .trace-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hit);
+  height: var(--hit);
+  padding: 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r1);
+  background: var(--surface);
+  color: transparent;
+}
+body[data-page="m01"] .trace-cell svg { width: 20px; height: 20px; }
+body[data-page="m01"] .trace-cell:hover { background: var(--surface-2); }
+body[data-page="m01"] .trace-cell[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+body[data-page="m01"] .trace-cell.is-project[aria-pressed="false"] { border-style: dashed; border-color: var(--warn); }
+body[data-page="m01"] .trace-post { white-space: nowrap; font-family: var(--font-mono); font-size: var(--fs-xs); }
+body[data-page="m01"] .trace-ok, body[data-page="m01"] .trace-gap,
+body[data-page="m01"] .trace-good, body[data-page="m01"] .trace-bad { display: inline-flex; align-items: center; gap: 0.3em; }
+body[data-page="m01"] .trace-ok svg, body[data-page="m01"] .trace-gap svg,
+body[data-page="m01"] .trace-good svg, body[data-page="m01"] .trace-bad svg { width: 16px; height: 16px; flex: none; }
+body[data-page="m01"] .trace-ok { color: var(--ok); }
+body[data-page="m01"] .trace-gap { color: var(--bad); font-family: var(--font-sans); font-weight: 700; }
+body[data-page="m01"] .trace-deg { text-align: center; font-size: var(--fs-xs); }
+body[data-page="m01"] .trace-degnum { display: block; font-family: var(--font-mono); font-weight: 700; }
+body[data-page="m01"] .trace-flag { display: block; font-weight: 650; white-space: nowrap; }
+body[data-page="m01"] .trace-hyper { color: var(--accent); }
+body[data-page="m01"] .trace-orphan { color: var(--bad); }
+body[data-page="m01"] .trace-status { font-size: var(--fs-sm); margin: 0 0 var(--s3); }
+body[data-page="m01"] .trace-good { color: var(--ok); font-weight: 650; }
+body[data-page="m01"] .trace-bad { color: var(--bad); font-weight: 650; }
+body[data-page="m01"] .trace-tools { display: grid; gap: var(--s3); }
+body[data-page="m01"] .trace-inter-box h4 { margin: 0 0 var(--s2); }
+body[data-page="m01"] .trace-selects { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); max-width: 32rem; }
+body[data-page="m01"] .trace-inter { margin: var(--s2) 0 0; font-size: var(--fs-sm); }
+
+/* ---------------------------------------------------------------- W1.3 AC-3 */
+body[data-page="m01"] .ac3-controls { grid-template-columns: minmax(0, 1fr); }
+body[data-page="m01"] .ac3-cons { margin: 0; padding: var(--s2) var(--s3) var(--s3); border: 1px solid var(--border); border-radius: var(--r1); min-width: 0; }
+body[data-page="m01"] .ac3-cons legend { font-weight: 650; font-size: var(--fs-sm); padding: 0 var(--s1); }
+body[data-page="m01"] .ac3-con { display: flex; align-items: flex-start; gap: var(--s2); padding-block: 2px; min-height: var(--hit); }
+body[data-page="m01"] .ac3-con input { flex: none; width: 20px; height: 20px; margin: 0.55em 0 0; accent-color: var(--accent); }
+body[data-page="m01"] .ac3-con label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s3); padding-block: 0.35em; min-width: 0; cursor: pointer; }
+body[data-page="m01"] .ac3-cid { font-family: var(--font-mono); font-weight: 700; }
+/* Padding holds the KaTeX struts and subscript overhang, so short formulas do not scroll by a pixel or two. */
+body[data-page="m01"] .ac3-tex { min-width: 0; max-width: 100%; overflow-x: auto; padding-block: 0.25em; padding-inline-end: 0.15em; }
+body[data-page="m01"] .ac3-from { font-size: var(--fs-xs); color: var(--text-2); }
+body[data-page="m01"] .ac3-domains { display: grid; gap: var(--s3); margin-block-end: var(--s3); }
+body[data-page="m01"] .ac3-var-name { margin: 0 0 var(--s1); font-weight: 650; display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s1); }
+body[data-page="m01"] .ac3-var-name .unit { font-weight: 400; color: var(--text-2); }
+body[data-page="m01"] .ac3-var-note { font-weight: 400; font-size: var(--fs-xs); color: var(--text-2); margin-inline-start: var(--s1); }
+body[data-page="m01"] .ac3-values { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s1); }
+body[data-page="m01"] .ac3-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  margin: 0;
+  min-height: 32px;
+  padding: 0 0.6em;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--r1);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
+body[data-page="m01"] .ac3-val.is-out { background: var(--surface-2); border-color: var(--border); color: var(--text-2); border-style: dashed; }
+body[data-page="m01"] .ac3-val.is-out .ac3-num { text-decoration: line-through; }
+body[data-page="m01"] .ac3-val.is-project { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+body[data-page="m01"] .ac3-star { color: var(--accent); font-size: var(--fs-xs); }
+body[data-page="m01"] .ac3-why {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--bad);
+  letter-spacing: 0.02em;
+}
+body[data-page="m01"] .ac3-buttons { margin-block-end: var(--s2); }
+body[data-page="m01"] .ac3-log { margin: 0 0 var(--s2); font-size: var(--fs-sm); min-height: 3.2em; }
+body[data-page="m01"] .ac3-queue-box { margin-block-end: var(--s2); }
+body[data-page="m01"] .ac3-qhead { margin: 0 0 var(--s1); font-size: var(--fs-xs); font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; }
+body[data-page="m01"] .ac3-queue { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; font-family: var(--font-mono); font-size: var(--fs-xs); }
+body[data-page="m01"] .ac3-queue li { margin: 0; padding: 1px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+body[data-page="m01"] .ac3-queue li.is-next { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+body[data-page="m01"] .ac3-next { font-family: var(--font-sans); }
+body[data-page="m01"] .ac3-done { display: inline-flex; align-items: center; gap: 0.3em; margin: 0; font-size: var(--fs-sm); color: var(--ok); font-weight: 650; }
+body[data-page="m01"] .ac3-done svg { width: 16px; height: 16px; }
+body[data-page="m01"] .ac3-summary { margin: 0; font-size: var(--fs-sm); }
+
+/* ---------------------------------------------------------------- W1.4 PEAS sorter */
+body[data-page="m01"] .peas-pool { display: flex; flex-wrap: wrap; gap: var(--s2); min-height: var(--hit); margin-block-end: var(--s4); }
+body[data-page="m01"] .peas-pool .muted { align-self: center; font-size: var(--fs-sm); }
+body[data-page="m01"] .peas-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  min-height: var(--hit);
+  padding: 0 var(--s3);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-sm);
+}
+body[data-page="m01"] .peas-item:hover { background: var(--surface-2); }
+body[data-page="m01"] .peas-item[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 2px var(--accent); }
+body[data-page="m01"] .peas-item svg { width: 16px; height: 16px; flex: none; }
+body[data-page="m01"] .peas-item.is-right { border-color: var(--ok); }
+body[data-page="m01"] .peas-item.is-right svg { color: var(--ok); }
+body[data-page="m01"] .peas-item.is-wrong { border-color: var(--bad); }
+body[data-page="m01"] .peas-item.is-wrong svg { color: var(--bad); }
+body[data-page="m01"] .peas-buckets { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); margin-block-end: var(--s3); }
+body[data-page="m01"] .peas-bucket { display: flex; flex-direction: column; gap: var(--s2); padding: var(--s3); border: 1px dashed var(--border-strong); border-radius: var(--r2); min-width: 0; }
+body[data-page="m01"] .peas-bucket-name { margin: 0; font-weight: 700; }
+body[data-page="m01"] .peas-in { display: flex; flex-wrap: wrap; gap: var(--s1); min-height: 1em; }
+body[data-page="m01"] .peas-target { align-self: flex-start; }
+body[data-page="m01"] .peas-status { margin-block-start: var(--s2); }
+body[data-page="m01"] .peas-feedback { list-style: none; margin: var(--s2) 0 0; padding: 0; display: grid; gap: var(--s1); font-size: var(--fs-sm); }
+body[data-page="m01"] .peas-feedback li { display: flex; gap: var(--s2); margin: 0; }
+body[data-page="m01"] .peas-feedback svg { flex: none; width: 16px; height: 16px; margin-block-start: 0.2em; }
+body[data-page="m01"] .peas-feedback .is-right svg { color: var(--ok); }
+body[data-page="m01"] .peas-feedback .is-wrong svg { color: var(--bad); }
+
+/* LOCAL (request P0): .scroll-x { position: relative; } so absolutely positioned children (KaTeX's
+   hidden MathML, .visually-hidden spans) are clipped by the scroll box instead of widening the page. */
+body[data-page="m01"] .scroll-x { position: relative; }

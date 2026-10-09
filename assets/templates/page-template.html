@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{PAGE_NAME}} · Attitude Control: The Big Picture</title>
+<meta name="description" content="{{ONE_SENTENCE_DESCRIPTION}}">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<!-- Pages with equations keep the three KaTeX lines; others delete them. -->
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<!-- Optional page stylesheet, scoped under body[data-page="{{PAGE_ID}}"]. -->
+<link rel="stylesheet" href="assets/css/pages/{{PAGE_ID}}.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<!-- adcs-sim.js: pages that simulate (index, simulator and every module). -->
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<!-- adcs-plot.js: pages with plots. adcs-wire.js: pages with wireframes. -->
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<!-- Simulator only:
+<script defer src="assets/vendor/three.min.js"></script>
+<script defer src="assets/vendor/OrbitControls.js"></script>
+-->
+<script defer src="assets/js/pages/{{PAGE_SCRIPT}}.js"></script>
+</head>
+<body data-page="{{PAGE_ID}}">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container">
+    <h1>{{PAGE_HEADING}}</h1>
+    <p class="lede">{{LEDE}}</p>
+
+    <section id="{{SECTION_ID}}" aria-labelledby="{{SECTION_ID}}-title">
+      <h2 id="{{SECTION_ID}}-title">{{SECTION_TITLE}}</h2>
+      <div class="prose">
+        <p>{{PROSE}}</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div data-chrome="footer"></div>
+
+<!--
+  Page script pattern (assets/js/pages/{{PAGE_SCRIPT}}.js):
+
+  (function () { 'use strict';
+    ADCS.ui.ready(function () {
+      ADCS.ui.mountChrome({ page: '{{PAGE_ID}}' });
+      // ... build the page from ADCS.data / ADCS.params / ADCS.presets ...
+      ADCS.ui.typeset(document.body);
+      ADCS.ui.linkTerms(document.body);
+    });
+  })();
+
+  Page ids for mountChrome: index, simulator, learn, atlas, glossary, about.
+  The footer links to about.html#licences, so about.html needs an element with id="licences".
+-->
+</body>
+</html>

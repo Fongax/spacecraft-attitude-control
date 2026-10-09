@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01 Requirements and systems engineering · Attitude Control: The Big Picture</title>
+<meta name="description" content="Turn the mission need into five measurable requirements, classify each as safety or liveness, and trace every one to a test.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m01.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m01.js"></script>
+</head>
+<body data-page="m01">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <!-- 1. Hero -->
+    <header class="module-hero">
+      <span class="module-num">MODULE 01</span>
+      <h1>Requirements and systems engineering</h1>
+      <p class="module-purpose">Turn the mission need into five measurable requirements, classify each as safety or liveness, and trace every one to a test.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Define</span>
+        <span>About 20 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <!-- 2. Objectives -->
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- 3. Content sections -->
+    <section id="need" aria-labelledby="need-title">
+      <h2 id="need-title">From mission need to “shall”</h2>
+      <div class="prose">
+        <p>Every engineering project starts with a need written in ordinary words. For this spacecraft it is easy to state: <em>keep pointing where you are told, survive an upset such as a sudden spin, and never ask the actuators for more than they can give.</em> Everyone agrees with that sentence, and nobody can test it. “Keep pointing” how accurately? “Survive” by when? Which actuator limit?</p>
+        <p>A <dfn data-term="requirement">requirement</dfn> is the testable version of a need. A good one has four parts, and each part answers a question a tester would otherwise have to guess:</p>
+        <ul>
+          <li><strong>One obligation</strong>, written with a single “shall”. Two obligations in one sentence cannot pass or fail separately.</li>
+          <li><strong>A measurable threshold with units</strong>, such as ±2 deg or 15 deg/s.</li>
+          <li><strong>A condition</strong> that says when it applies: “in nominal mode”, “after safe-mode entry”, “during the defined verification cases”.</li>
+          <li><strong>A verification method</strong> (test, analysis, inspection or demonstration) that says how you will know.</li>
+        </ul>
+        <p>The project turned its need into five requirements. “Keep pointing” became REQ-F2 (within ±2 deg in nominal mode). “Survive an upset” became REQ-F1 (rates below 0.5 deg/s after safe-mode entry) and its time-bounded, statistical partner REQ-L1 (within 60 s in at least 95% of Monte Carlo trials). “Never exceed the limits” became the two safety requirements REQ-S1 (never above 15 deg/s) and REQ-S2 (torque within the actuator limits). All of these values are <span class="tag tag-project" title="Project: stated in the project notes.">Project</span> values.</p>
+        <p>Several subjects bring the same discipline from different directions. The typical content of a mechanical engineering design subject includes writing measurable specifications with a target value and a test method, and mapping customer needs to engineering specifications (quality function deployment); carry that mapping one step further, to tests, and you have the shape of the traceability matrix below. Clear technical writing is typical content of a scientific-communication subject; applied to requirements, it means each one is singular, unambiguous and verifiable. The typical content of an aviation law subject shows the same flow-down at national scale: international convention, then national rule, then operator procedure, each level traceable to the one above.</p>
+      </div>
+
+      <figure class="widget" id="w-linter" aria-labelledby="w-linter-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-linter-title">Requirement linter</h3>
+          <p class="widget-try"><strong>Try:</strong> load “Vague need”, then rewrite it until every check is green. <strong>Notice:</strong> REQ-F1 keeps one flag because its time bound lives in a different requirement, REQ-L1.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls" id="lint-controls"></div>
+          <div class="widget-output" id="lint-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Six text rules, the kind a requirements reviewer applies by eye. A clean lint does not make a requirement right; it makes it testable.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span> <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <section id="table" aria-labelledby="table-title">
+      <h2 id="table-title">The five requirements</h2>
+      <div class="prose">
+        <p>These are the project’s requirements exactly as written in its notes (they use the spelling “stabilize”). Each has a class and a verification method. The last column says how this site checks each one automatically on every simulator run; that check is the site’s reading of the text, so it carries a separate tag.</p>
+      </div>
+      <div id="req-table"><noscript><p>The requirement table is built from the site’s parameter file and needs JavaScript.</p></noscript></div>
+      <div class="prose">
+        <p>Two things stand out. First, the functional requirements (F) describe what the system does, the safety requirements (S) describe what must never happen, and the single liveness requirement (L) describes something that must eventually happen, within a bound. Second, REQ-S2 has no number in its text: “actuator limits” points to the actuator description, where the limit is ±3 mN m per axis <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>. Try it in the linter above and it gets flagged.</p>
+      </div>
+    </section>
+
+    <section id="assumptions" aria-labelledby="assumptions-title">
+      <h2 id="assumptions-title">Assumptions and scope</h2>
+      <div class="prose">
+        <p>A requirement is only as good as the model it is verified on, so the project lists its assumptions next to its requirements. Each one buys simplicity and costs fidelity; writing them down tells a reviewer exactly where the results stop being valid.</p>
+      </div>
+      <div class="scroll-x" tabindex="0" role="region" aria-label="The six project assumptions">
+        <table class="table">
+          <caption>The six project assumptions <span class="tag tag-project" title="Project: stated in the project notes.">Project</span></caption>
+          <thead><tr><th scope="col">Assumption</th><th scope="col">What it buys</th><th scope="col">Where this site picks it up</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">The spacecraft is a rigid body.</th><td>Six numbers (q, ω) describe the whole state; no flexible modes or fuel slosh.</td><td><a href="m03-dynamics.html#rigid-body">03 Dynamics</a></td></tr>
+            <tr><th scope="row">The inertia matrix is diagonal and constant.</th><td>Body axes are principal axes, so Euler’s equation has its simplest form.</td><td><a href="m03-dynamics.html#rigid-body">03 Dynamics</a></td></tr>
+            <tr><th scope="row">Reaction wheels are per-axis torque-limited actuators.</th><td>Wheel speed, friction and motor dynamics are hidden behind one clip at ±3 mN m.</td><td><a href="m06-actuators.html">06 Actuators</a></td></tr>
+            <tr><th scope="row">LQR is valid near the nominal attitude, where the quaternion vector part is about half the small-angle error.</th><td>A linear design model for the optimal controller.</td><td><a href="m05-control.html">05 Control</a></td></tr>
+            <tr><th scope="row">Disturbance torque is bounded and constant over each run.</th><td>One vector per run, sampled within ±2×10⁻⁵ N m per axis in Monte Carlo.</td><td><a href="m03-dynamics.html#environment">03 Dynamics</a>, <a href="m09-verification.html">09 Verification</a></td></tr>
+            <tr><th scope="row">Sensor noise and estimator dynamics are out of scope; the true simulated state is fed back.</th><td>The controller sees perfect q and ω.</td><td><a href="m07-sensors.html">07 Sensors (extension)</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>The fourth assumption is a small-angle statement you will meet again. For a rotation by a small angle θ about the unit axis n̂, the quaternion is approximately</p>
+        <div class="eq">\[ q \approx \left[\,1,\ \tfrac{\theta}{2}\,\hat n\,\right] \quad\Rightarrow\quad \theta \approx 2\,q_v , \]</div>
+        <p>so a controller that acts on 2q<sub>v</sub> is acting on the angle error. Far from the target the approximation weakens, which is why the project only claims LQR validity near nominal.</p>
+        <p>The last assumption is a <strong>scope decision</strong>, and a sound one. Declaring sensors and estimation out of scope stops the first project from growing without limit, and turns the topic into a planned extension instead of an unfinished part. Scope management of this kind is typical content of a project management principles subject; stating the problem with explicit constraints and assumptions is typical content of an engineering design practice subject. On this site the extension lives in <a href="m07-sensors.html">module 07</a>, clearly labelled <span class="tag tag-extension" title="Extension: beyond the original project scope.">Extension</span>.</p>
+      </div>
+    </section>
+
+    <section id="classes" aria-labelledby="classes-title">
+      <h2 id="classes-title">Safety vs liveness</h2>
+      <div class="prose">
+        <p>Requirements fall into two logical families, and the family decides how you check them. A <dfn data-term="safety-property">safety property</dfn> says <em>something bad never happens</em>. A <dfn data-term="liveness-property">liveness property</dfn> says <em>something good eventually happens</em>. Temporal logic writes “always” as G (globally) and “eventually” as F (finally). For the four requirements with a temporal shape (τ<sub>i</sub> is each axis torque):</p>
+        <div class="eq">\[ \text{S1:}\;G\big(\lVert\omega\rVert \le 15^\circ/\mathrm{s}\big) \]</div>
+        <div class="eq">\[ \text{S2:}\;G\big(|\tau_i| \le 0.003\ \mathrm{N\,m}\big) \]</div>
+        <div class="eq">\[ \text{F1:}\;G\big(\text{enterSafe} \rightarrow F\,\lVert\omega\rVert < 0.5^\circ/\mathrm{s}\big) \]</div>
+        <div class="eq">\[ \text{L1:}\;P_{\ge 0.95}\big[\,F_{\le 60\,\mathrm{s}}\ \lVert\omega\rVert < 0.5^\circ/\mathrm{s}\,\big] \]</div>
+        <p>The difference matters in practice. <strong>A finite log can refute a safety property:</strong> one sample above 15 deg/s and REQ-S1 has failed, whatever happens later. So the check is a maximum over the log. A pure liveness property can never be refuted by a finite log, because the good thing might still happen after the log ends. REQ-F1 on its own has this weakness. <strong>A bound makes liveness testable:</strong> REQ-L1 says “within 60 s”, so a trial that has not reached 0.5 deg/s by 60 s after entry has failed. The check becomes a time-to-threshold measurement, and the 95% turns it into a statistical claim over many trials (<a href="m09-verification.html">module 09</a>). REQ-F2 is checked on the final state of each run.</p>
+        <p>The logic underneath, propositions and quantifiers, is typical content of a discrete structures subject; temporal operators such as G and F, and the split into safety and liveness properties itself, are typical content of a logic and automated reasoning subject. The aircraft world has the same idea: handling-quality criteria, typical content of an advanced aerodynamics subject, put bounds on modal parameters such as damping ratio ζ and natural frequency ω<sub>n</sub>, much as REQ-F2 and the settling-time metric bound this controller’s response.</p>
+      </div>
+    </section>
+
+    <section id="trace" aria-labelledby="trace-title">
+      <h2 id="trace-title">Traceability</h2>
+      <div class="prose">
+        <p><dfn data-term="traceability">Traceability</dfn> answers two questions: <em>which test proves this requirement?</em> and <em>why does this test exist?</em> The project’s test plan links six tests to the five requirements. Written as a grid with requirements as rows and tests as columns, it is an <strong>incidence matrix</strong>: a 1 where a test verifies a requirement. Most tests verify one requirement; T03 verifies three at once ({F1, S1, S2}), so in graph terms it is a <strong>hyperedge</strong>, one edge joining three nodes. Splitting it into three separate pairs would lose the fact that one scenario proves them together.</p>
+        <p>Coverage is a pair of row and column tests on that matrix:</p>
+        <div class="eq">\[ \begin{aligned} \forall r&:\ \deg(r) \ge 1 \quad\text{(no untested requirement)}, \\ \forall t&:\ \deg(t) \ge 1 \quad\text{(no orphan test)} . \end{aligned} \]</div>
+        <p>Read row by row, the matrix is an <strong>inverted index</strong>, the structure behind every search engine: each requirement ID is a term and its <em>postings</em> are the tests that cover it. “Which tests cover both REQ-S1 and REQ-F1?” is a postings intersection, and the answer is {T03}. A requirement with an empty postings list is the dangerous case, a <strong>silent gap</strong>: nothing fails and nothing warns, because there is no test to fail.</p>
+        <p>Each of these views starts from something a subject teaches. Data structures notes teach incidence matrices and hypergraphs, in which one edge can join k nodes and flattening it into pairs loses the grouping; T03 is such an edge. Database and operating-system internals notes teach the inverted index, which maps each term to a postings list and answers an AND query by intersecting those lists; read as an index, the traceability matrix answers coverage questions the same way. Computing algorithms notes define graph vocabulary such as incidence and vertex degree; in the bipartite graph of requirements and tests, coverage means every requirement vertex has degree at least 1. AI methodologies notes teach knowledge stored as subject–predicate–object triples; stored that way, traceability needs an explicit closed-world query, because a missing triple is not a failing check. In software practice, user stories with acceptance criteria and custom test markers are typical content of a software projects subject; a marker that carries a requirement ID makes traceability machine-readable.</p>
+      </div>
+
+      <figure class="widget" id="w-trace" aria-labelledby="w-trace-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-trace-title">Traceability matrix</h3>
+          <p class="widget-try"><strong>Try:</strong> switch off T04, then intersect REQ-S1 with REQ-F1. <strong>Notice:</strong> REQ-L1 becomes a silent gap with only one click, and T03 is the only test shared by S1 and F1.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-output" id="trace-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Starts from the project’s test plan. Each cell is a toggle button; rows show their postings and columns their degree.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <section id="margins" aria-labelledby="margins-title">
+      <h2 id="margins-title">Margins and derived requirements</h2>
+      <div class="prose">
+        <p>Passing a requirement is a yes or no answer; a <dfn data-term="margin">margin</dfn> says how comfortably. Machine design checks every part against the same ratio, strength over stress, and the idea generalises to any requirement:</p>
+        <div class="eq">\[ n = \frac{\text{capability}}{\text{demand}} , \qquad n > 1 \ \text{passes}, \quad n \approx 1 \ \text{is fragile}. \]</div>
+        <p>For REQ-S1 the capability is the 15 deg/s limit and the demand is the worst rate seen in a verification case. The scenario rows are computed by this page’s own simulator runs <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>. The last two rows compare Monte Carlo campaigns: the project reported a worst rate of 13.22 deg/s over its 60 trials <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>, while this site’s campaign (seed 42, site-default gains) peaks at 12.47 deg/s. The random draws and the gains differ, so the two worst cases are different trials, and both pass.</p>
+      </div>
+      <div id="margin-table"></div>
+      <div class="prose">
+        <p>The LQR slew of T02 passes REQ-S1 with a margin of only 0.72 deg/s (n ≈ 1.05): a fragile pass that a slightly larger initial error would break. REQ-S2 is different: the saturation block clips every command, so the applied torque can never exceed 3 mN m and n = 1.00 holds by construction, even though the controller asks for more than twice that in T03. The real question for S2 then moves elsewhere: does the system still meet F1 and L1 while it is saturated? That is the subject of <a href="m05-control.html">module 05</a> and <a href="m06-actuators.html">module 06</a>.</p>
+        <p><strong>Reliability allocation</strong> uses the same top-down thinking. If k parts in series must together reach R<sub>sys</sub>, each needs</p>
+        <div class="eq">\[ R_i = R_{sys}^{1/k}, \qquad \text{e.g. } 0.95^{1/3} = 0.983 \ \text{for three wheels} \]</div>
+        <p>(an <span class="tag tag-illustrative" title="Illustrative: example hardware numbers, not project data.">Illustrative</span> target). Machine-elements notes teach this allocation (two bearings in series sharing a 0.95 target need √0.95 = 0.975 each) and warn that a larger design factor never replaces naming the uncertainty behind it.</p>
+        <p><strong>Derived requirements</strong> are children of a parent requirement. REQ-S2 only says “do not exceed actuator limits”, but choosing a wheel motor turns it into numbers. With an illustrative motor (torque constant k<sub>M</sub> = 6 mN m/A, back-EMF constant k<sub>e</sub> = 0.006 V s/rad, winding resistance R = 4 Ω, top wheel speed ω<sub>max</sub> = 1000 rad/s) <span class="tag tag-illustrative" title="Illustrative: example hardware numbers, not project data.">Illustrative</span>:</p>
+        <div class="eq">\[ k_M I_{lim} \ge 3\ \mathrm{mN\,m} \ \Rightarrow\ I_{lim} \ge \frac{0.003}{0.006} = 0.5\ \mathrm{A} \]</div>
+        <div class="eq">\[ V_{bus} \ge k_e\,\omega_{max} + I_{lim} R = 0.006 \times 1000 + 0.5 \times 4 = 8\ \mathrm{V} \]</div>
+        <p>and a continuous thermal limit I²R = 0.5² × 4 = 1 W per motor at full torque. Electromechanics teaches the tools behind these lines: the DC motor equation, the torque constant k<sub>M</sub> = T/I, back-EMF and the energy balance VI = RI² + Tω. With them, REQ-S2 turns into these child requirements, which stay traceable because each one names its parent. Aviation has the same habits. The typical content of an aircraft performance and planning subject applies corrections and margins to every chart value (“requirement plus margin” thinking), and its second part typically covers certification against the worst credible single failure and rules that limit how long an aircraft may operate in a degraded mode: a time-limited rule with the same shape as REQ-L1.</p>
+      </div>
+    </section>
+
+    <section id="constraints" aria-labelledby="constraints-title">
+      <h2 id="constraints-title">Requirements as constraints</h2>
+      <div class="prose">
+        <p>Requirements do more than judge a finished design: they limit the design parameters before you choose them. Take the detumble controller, \(\tau = -K_d\,\omega\). While it is not saturated, each axis obeys \(J\dot\omega = -K_d\,\omega\), so the rate decays exponentially:</p>
+        <div class="eq">\[ \omega(t) = \omega_0\, e^{-K_d t / J} \quad\Rightarrow\quad t_{\text{detumble}} = \frac{J}{K_d}\,\ln\frac{\omega_{\text{enter}}}{\omega_{\text{exit}}} . \]</div>
+        <p>REQ-L1 asks for the detumble within 60 s. Starting at the 6 deg/s entry threshold and finishing at 0.5 deg/s on the axis with the largest inertia, J<sub>max</sub> = 0.040 kg m²:</p>
+        <div class="eq">\[ K_d > \frac{J_{max}}{60\ \mathrm{s}}\,\ln\frac{6}{0.5} = \frac{0.040}{60}\times 2.485 \approx 0.0017\ \mathrm{N\,m\,s} . \]</div>
+        <p>REQ-F1 adds a second bound. A constant disturbance τ<sub>d</sub> leaves a steady residual rate ω<sub>ss</sub> = τ<sub>d</sub>/K<sub>d</sub>, a vector. REQ-F1 and the detumble exit guard both test its norm ‖ω‖, which must fall below 0.5 deg/s = 0.00873 rad/s. A disturbance of 2×10⁻⁵ N m on a single axis, the Monte Carlo bound, would need only</p>
+        <div class="eq">\[ K_d > \frac{2\times10^{-5}}{0.00873} \approx 0.0023\ \mathrm{N\,m\,s} \quad\text{(one axis)} , \]</div>
+        <p>but all three axes may sit at that bound at once. Then ‖τ<sub>d</sub>‖ ≤ 2√3×10⁻⁵ = 3.46×10⁻⁵ N m, so the bound on the norm is √3 times larger:</p>
+        <div class="eq">\[ K_d > \frac{\lVert\tau_d\rVert_{max}}{0.00873} = \frac{2\sqrt{3}\times10^{-5}}{0.00873} \approx 0.0040\ \mathrm{N\,m\,s} . \]</div>
+        <p>A gain between the two passes the single-axis test and still fails REQ-F1. With K<sub>d</sub> = 0.003 and the disturbance at [2, −2, 2]×10⁻⁵ N m, ‖ω‖ settles at 3.46×10⁻⁵/0.003 = 0.0115 rad/s ≈ 0.66 deg/s, so the craft never leaves SAFE_DETUMBLE <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>. The site’s detumble gain K<sub>d</sub> = 0.05 N m s <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span> meets the REQ-L1 bound and the norm bound by factors of about 30 and 13 <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span>. The bounds neglect gyroscopic coupling and saturation: at 6 deg/s a gain of 0.05 asks for about 5 mN m, so detumble begins as a constant-torque deceleration at the 3 mN m limit and only becomes exponential near the end.</p>
+        <p>Intelligent Systems notes teach the <strong>constraint satisfaction problem</strong> (variables with domains, and constraints over one, two or more of them) and the arc-consistency algorithm AC-3; here the design parameters become the variables and the requirements become the constraints. AC-3 removes every value that has no support in some constraint. It never removes a value that belongs to a solution, though the values that survive are not guaranteed to be jointly consistent. Tagging each removed value with the constraint that removed it gives a live traceability matrix for design choices. The widget below runs the generalised algorithm, in which one constraint may link three variables.</p>
+      </div>
+
+      <figure class="widget" id="w-ac3" aria-labelledby="w-ac3-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-ac3-title">Requirements → constraints (generalised AC-3)</h3>
+          <p class="widget-try"><strong>Try:</strong> press Step a few times and watch the queue, then Prune all; switch C5 off and prune again. <strong>Notice:</strong> REQ-L1 (C1) and REQ-F1 (C2) both cut low K<sub>d</sub> values, and the project’s choice survives every constraint. With C5 off, nothing in K<sub>d</sub> is pruned: a low gain survives by raising ω<sub>exit</sub> to 6–8 deg/s, so fixing the threshold in the requirement text is what gives C1 and C2 their bite. K<sub>d</sub> = 0.0015 is cut by C2 but survives C1, because ω<sub>enter</sub> = 3 or 4 deg/s still supports it.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls" id="ac3-controls"></div>
+          <div class="widget-output" id="ac3-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Domains are discretised for the demonstration. C1 uses J<sub>max</sub> = 0.040 kg m² and neglects saturation, as in the derivation above. C2 uses the norm bound ‖τ<sub>d</sub>‖ ≤ 2√3×10⁻⁵ N m, with every axis at the disturbance bound.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span> <span class="tag tag-derived" title="Derived: computed from project parameters.">Derived</span> <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <section id="peas" aria-labelledby="peas-title">
+      <h2 id="peas-title">Performance measure first (PEAS)</h2>
+      <div class="prose">
+        <p>Intelligent Systems notes describe any agent, from a thermostat to a spacecraft, with <dfn data-term="peas">PEAS</dfn>: Performance measure, Environment, Actuators, Sensors, written in that order on purpose. The performance measure comes first because it decides what the agent must sense and what it must be able to do. For this project:</p>
+      </div>
+      <div class="scroll-x" tabindex="0" role="region" aria-label="PEAS description of the attitude-control system">
+        <table class="table">
+          <caption>PEAS for the attitude-control system</caption>
+          <thead><tr><th scope="col">Letter</th><th scope="col">For this spacecraft</th><th scope="col">Tag</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">P: performance</th><td>The five requirements: ±2 deg pointing, 0.5 deg/s after safe-mode entry, never above 15 deg/s, torque within limits, detumble within 60 s in 95% of trials.</td><td><span class="tag tag-project" title="Project: stated in the project notes.">Project</span></td></tr>
+            <tr><th scope="row">E: environment</th><td>The rigid body and its inertia, plus a bounded disturbance torque from the space environment.</td><td><span class="tag tag-project" title="Project: stated in the project notes.">Project</span></td></tr>
+            <tr><th scope="row">A: actuators</th><td>Three reaction wheels, ±3 mN m per axis.</td><td><span class="tag tag-project" title="Project: stated in the project notes.">Project</span></td></tr>
+            <tr><th scope="row">S: sensors</th><td>The true simulated state in the project; a rate gyro and a star tracker in the extension.</td><td><span class="tag tag-project" title="Project: stated in the project notes.">Project</span> <span class="tag tag-extension" title="Extension: beyond the original project scope.">Extension</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="prose">
+        <p>Performance measures usually conflict: a faster slew means more torque and a higher peak rate, which eats into the REQ-S1 margin. A mature specification says how the conflicts are weighed. In this project that statement is numerical: the LQR weights Q = diag(2, 2, 2, 0.15, 0.15, 0.15) on attitude and rate error and R = 2000 I on torque <span class="tag tag-project" title="Project: stated in the project notes.">Project</span> say, in one line of maths, how much a radian of attitude error is worth against a newton-metre of torque: the attitude entries of Q are per rad², the rate entries per (rad/s)² and R per (N m)² (<a href="m05-control.html">module 05</a>).</p>
+        <p>To sort an item into the right letter, the Intelligent Systems notes give a simple <strong>switch-off test</strong>: imagine removing the agent. If the thing would still exist, it belongs to the Environment. If it disappears with the agent, it is part of the agent, so it is a sensor or an actuator.</p>
+      </div>
+
+      <figure class="widget" id="w-peas" aria-labelledby="w-peas-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-peas-title">PEAS sorter</h3>
+          <p class="widget-try"><strong>Try:</strong> pick an item, then pick its letter; press Check when all nine are placed. <strong>Notice:</strong> the rigid body is Environment: switch the controller off and the body is still there.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-output" id="peas-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Each placement is explained with the switch-off test when you check.</p>
+          <span class="tags"><span class="tag tag-project" title="Project: stated in the project notes.">Project</span> <span class="tag tag-extension" title="Extension: beyond the original project scope.">Extension</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- 4. Simulator links -->
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <!-- 5. Quiz -->
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <div class="prose in-short">
+      <h2 id="in-short-title">In short</h2>
+      <p>The need became five requirements with one “shall”, one threshold and one verification method each. Safety requirements are checked as a maximum over a log; the liveness requirement became testable once it had a 60 s bound and a 95% pass rate. A matrix traces every requirement to a test, margins say how close each pass is, and the same thresholds act as constraints that rule out weak detumble gains before any simulation runs.</p>
+    </div>
+
+    <!-- 6. Where this came from -->
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <!-- 7. Pager -->
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

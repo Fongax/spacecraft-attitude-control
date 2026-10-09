@@ -3,18 +3,179 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Attitude Control: The Big Picture</title>
-<style>
-:root{--bg:#f7f8fa;--fg:#14171f;--muted:#5a6272}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1218;--fg:#e8ebf2;--muted:#a3abba}}
-body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif;padding:0 16px}
-main{max-width:36rem}h1{font-size:1.6rem;margin:0 0 .5rem}p{color:var(--muted)}
-</style>
+<title>Big picture · Attitude Control: The Big Picture</title>
+<meta name="description" content="A student spacecraft attitude-control project rebuilt in the browser: an interactive control loop showing how every studied subject feeds each part of the project.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/landing.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/landing.js"></script>
 </head>
-<body>
-<main>
-<h1>Attitude Control: The Big Picture</h1>
-<p>An interactive guide to how a spacecraft points itself, and how many disciplines meet in one control loop. The full site is on its way.</p>
+<body data-page="index">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+
+  <!-- ============================================================ 1. hero -->
+  <section class="hero" id="hero" aria-labelledby="hero-title">
+    <div class="container hero-grid">
+      <div class="hero-text">
+        <p class="hero-kicker">A student ADCS simulation project, rebuilt in your browser</p>
+        <h1 id="hero-title">One spacecraft, every subject.</h1>
+        <p class="lede">A small satellite must work out which way it is pointing and then hold that attitude against disturbances, using nothing but three small reaction wheels. Almost every subject studied, from mechanics and mathematics to software, statistics and human factors, feeds that one control loop.</p>
+        <div class="btn-row hero-actions">
+          <a class="btn primary" href="simulator.html">Open the simulator</a>
+          <a class="btn secondary" href="learn.html">Start the learning path</a>
+        </div>
+      </div>
+      <figure class="hero-figure" id="hero-anim" aria-labelledby="hero-anim-caption">
+        <div class="wire hero-wire">
+          <canvas id="hero-wire"></canvas>
+          <div class="hero-hud" aria-hidden="true">
+            <span class="hero-time" id="hero-time">t = 0.0 s</span>
+            <span id="hero-mode"></span>
+            <span class="hero-rate" id="hero-rate"></span>
+          </div>
+        </div>
+        <div class="hero-timeline" id="hero-timeline" aria-hidden="true"></div>
+        <div class="hero-controls">
+          <span id="hero-toggle-slot"></span>
+          <span id="hero-sim-slot"></span>
+        </div>
+        <figcaption id="hero-anim-caption" class="hero-caption">One engine run of the high-rate upset, replayed at four times real speed: safe mode damps the tumble, holds, and hands back to normal pointing. The dashed outline is the target attitude.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============================================================ 2. loop diagram -->
+  <section id="loop" class="container landing-section" aria-labelledby="loop-title">
+    <h2 id="loop-title">The loop, block by block</h2>
+    <div class="prose">
+      <p>This is the project's attitude-control loop, drawn the way control engineers draw it. Signals run left to right from the target attitude to the spacecraft, and the spacecraft's state comes back to be compared with the target. Around the loop sit the parts that say what it must achieve, prove that it does, and build and run it. Every block lists the subjects whose material feeds it.</p>
+    </div>
+
+    <figure class="widget" id="w-loop" aria-labelledby="w-loop-title">
+      <figcaption class="widget-head">
+        <span class="widget-kicker">Interactive</span>
+        <h3 class="widget-title" id="w-loop-title">The attitude-control loop and the subjects behind it</h3>
+        <p class="widget-try"><strong>Try:</strong> select a block, or Tab to one and move along the loop with the arrow keys. <strong>Notice:</strong> how many subjects feed even a single block, and that the dashed sensors and estimator were not part of the original project.</p>
+      </figcaption>
+      <div class="widget-body">
+        <div class="loop-layout">
+          <div class="loop-stage" id="loop-stage">
+            <div class="loop-svg-wrap" id="loop-svg"></div>
+            <div class="loop-list" id="loop-list"></div>
+            <noscript><p>The interactive diagram needs JavaScript. The <a href="learn.html">learning path</a> lists the same thirteen parts of the project.</p></noscript>
+            <ul class="loop-legend" id="loop-legend" aria-label="How to read the diagram"></ul>
+          </div>
+          <div class="loop-panel" id="loop-panel" role="region" aria-live="polite" aria-label="Details of the selected block"></div>
+        </div>
+      </div>
+      <div class="widget-foot">
+        <p>Blocks, arrows, descriptions and subject links all come from the site's single data file.</p>
+        <span class="loop-foot-actions" id="loop-foot-actions"></span>
+      </div>
+    </figure>
+
+    <h3 id="one-pass">One pass around the loop, every <span data-param="dt">0.01</span>&nbsp;s</h3>
+    <ol class="loop-steps prose">
+      <li><button type="button" class="link" data-select="err">Error quaternion</button> compares the attitude \(q\) with the target: \(q_e = q_{ref}^{*} \otimes q\), flipped if needed so that it describes the shorter rotation. Its angle \(\theta_e = 2\,\mathrm{atan2}(\lVert q_{e,v}\rVert,\, q_{e0})\) is the pointing error, and the rate norm \(\lVert\omega\rVert\) is computed from the same state.</li>
+      <li><button type="button" class="link" data-select="modes">Mode manager</button> compares \(\lVert\omega\rVert\), the error angle and the fault flag with its thresholds and picks the control law. NOMINAL holds the target; if \(\lVert\omega\rVert\) exceeds <span data-param="enterRate">6</span>&nbsp;deg/s, or a fault persists for <span data-param="faultPersist">0.5</span>&nbsp;s, it switches to SAFE_DETUMBLE, then to SAFE_HOLD, before it hands back. <span class="tag tag-project" title="Project: stated in the project notes.">Project</span></li>
+      <li><button type="button" class="link" data-select="ctrl">Controller</button> turns the error and the body rate \(\omega\) into a torque command with the law the mode manager has just chosen. In NOMINAL that is a PID law, \(\tau_{cmd} = -K_p\,q_{e,v} - K_d\,\omega - K_i \int q_{e,v}\,dt\), with torque in N m.</li>
+      <li><button type="button" class="link" data-select="act">Reaction wheels</button> clip each axis to ±<span data-param="tauMax">3</span>&nbsp;mN&nbsp;m <span class="tag tag-project" title="Project: stated in the project notes.">Project</span>, so a large error asks for more torque than the wheels can give.</li>
+      <li><button type="button" class="link" data-select="dyn">Spacecraft dynamics</button> add the <button type="button" class="link" data-select="env">environment</button>'s disturbance torque and evolve the rigid body: \(J\dot\omega + \omega \times (J\omega) = \tau + \tau_d\) for the rates and \(\dot q = \tfrac12\, q \otimes [0, \omega]\) for the attitude.</li>
+      <li><button type="button" class="link" data-select="int">Integrator</button> advances the state by one RK4 step of <span data-param="dt">0.01</span>&nbsp;s <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span> and renormalises \(q\) to unit length.</li>
+      <li>The loop closes. The original project fed the true simulated state straight back to the error quaternion; the dashed <button type="button" class="link" data-select="sens">sensors</button> and <button type="button" class="link" data-select="est">estimator</button> replace it with noisy measurements and a filter. <span class="tag tag-extension" title="Extension: beyond the original project scope.">Extension</span></li>
+    </ol>
+    <p class="prose one-pass-note">The order is not arbitrary. The mode guards read this step's error angle and rate, so the errors must exist before the mode logic runs, and the controller must run after it so that it uses the mode just chosen. <a href="m02-architecture.html#dataflow">Module 02 turns one time step into an ordering puzzle</a>.</p>
+  </section>
+
+  <!-- ============================================================ 3. discipline lens -->
+  <section id="lens" class="container landing-section" aria-labelledby="lens-title">
+    <h2 id="lens-title">Discipline lens</h2>
+    <div class="prose">
+      <p>Choose one or more disciplines. The blocks they feed stay lit and show how many subjects feed them; the rest of the loop dims. The strip below shows the same thing for the thirteen parts of the project, which are also the thirteen learning modules.</p>
+      <p>“Strongest” ranks the parts as the atlas does, by a weighted score: each strong link counts 3, a moderate one 2 and a weak one 1. The three highest-scoring parts are named from the highest score down, and parts tied with the third are kept.</p>
+    </div>
+    <div class="lens-controls">
+      <div class="chips" id="lens-chips" role="group" aria-label="Disciplines"></div>
+      <span id="lens-clear-slot"></span>
+    </div>
+    <p class="lens-sentence" id="lens-sentence" aria-live="polite">Select a discipline to see which parts of the project it feeds.</p>
+    <p class="lens-brings" id="lens-brings" hidden></p>
+    <ol class="lens-parts" id="lens-parts" aria-label="The thirteen project parts"></ol>
+    <p class="lens-more" id="lens-more"></p>
+  </section>
+
+  <!-- ============================================================ 4. the project in numbers -->
+  <section id="numbers" class="container landing-section" aria-labelledby="numbers-title">
+    <h2 id="numbers-title">The project in numbers</h2>
+    <div class="prose">
+      <p>These values define the project. Each one is stated in the project notes, and the simulator and every module read it from the same place in the site's engine.</p>
+    </div>
+    <div class="stats" id="numbers-grid"></div>
+  </section>
+
+  <!-- ============================================================ 5. entry cards -->
+  <section id="explore" class="container landing-section" aria-labelledby="explore-title">
+    <h2 id="explore-title">Where to go next</h2>
+    <div class="grid-4 entry-cards">
+      <a class="card card-link entry-card" href="simulator.html">
+        <span class="card-kicker">Simulator</span>
+        <h3 class="card-title">Fly the whole system</h3>
+        <p>Run the full simulation in 3D with presets, live plots, requirement badges and a Monte Carlo runner.</p>
+      </a>
+      <a class="card card-link entry-card" href="learn.html">
+        <span class="card-kicker">Learning path</span>
+        <h3 class="card-title"><span data-count="modules">13</span> modules</h3>
+        <p>Follow the project's lifecycle from requirements to operations, about <span data-count="hours">6&nbsp;h 10&nbsp;min</span> of reading and widgets.</p>
+      </a>
+      <a class="card card-link entry-card" href="atlas.html">
+        <span class="card-kicker">Atlas</span>
+        <h3 class="card-title"><span data-count="courses">70</span> subjects</h3>
+        <p>Browse <span data-count="disciplines">8</span> disciplines and the <span data-count="links">280</span> links between their subjects and the project.</p>
+      </a>
+      <a class="card card-link entry-card" href="glossary.html">
+        <span class="card-kicker">Glossary</span>
+        <h3 class="card-title"><span data-count="terms">90</span> terms</h3>
+        <p>Look up every technical word, from quaternion to the Clopper–Pearson bound, with links to where it is used.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============================================================ 6. how to read this site -->
+  <section id="how-to-read" class="container landing-section" aria-labelledby="how-title">
+    <h2 id="how-title">How to read this site</h2>
+    <div class="prose">
+      <p>Every number and every claim carries a label that says where it comes from: stated in the project notes, derived from them, or chosen by this site. Open the legend for the full list.</p>
+      <div id="how-legend"></div>
+      <p><span class="tag tag-typical" title="Typical content: standard syllabus for a subject of that name, inferred from its outline, not from notes.">Typical content</span> means a link rests on the standard syllabus of a subject with that name, inferred from its outline, and not on notes from the subject itself. <span class="tag tag-analogy" title="Analogy: a teaching bridge rather than course content.">Analogy</span> marks a teaching bridge, such as reading a residual network block as one forward-Euler step, which helps an idea cross between fields without claiming the subject taught it. <span class="tag tag-extension" title="Extension: beyond the original project scope.">Extension</span> marks work beyond the original project, above all the sensors and estimator, because the original project fed its controller the true simulated state.</p>
+    </div>
+  </section>
+
 </main>
+
+<div data-chrome="footer"></div>
 </body>
 </html>

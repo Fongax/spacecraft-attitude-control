@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12 Project management and risk · Attitude Control: The Big Picture</title>
+<meta name="description" content="Read the project as a work breakdown with six iterations, schedule it, and score its risks with a register, an FMEA and a bow-tie.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m12.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m12.js"></script>
+</head>
+<body data-page="m12">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 12</span>
+      <h1>Project management and risk</h1>
+      <p class="module-purpose">The project as a project: what was built in which order, which tasks could slip the finish date, which risks were worth worrying about, and how each worry turned into a design feature you have already met.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Run</span>
+        <span>About 20 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ wbs -->
+    <section id="wbs" aria-labelledby="wbs-title">
+      <h2 id="wbs-title">Work breakdown and the iteration log</h2>
+      <div class="prose">
+        <p>The project organised its material into numbered work areas: requirements, system design, models, control designs, safe-mode logic, verification tests, results, project management and the interface with its animation, plus optional tools and a report <span class="tag tag-project">Project</span>. Read as a <em>work breakdown structure</em> (WBS), that list is the whole scope, split into pieces small enough to plan, do and check. Scope management and the WBS are typical content of a project-management subject <span class="tag tag-typical">Typical content</span>.</p>
+        <ol class="m12-wbs" aria-label="Work breakdown structure">
+          <li><strong>1 Requirements</strong> and assumptions (<a href="m01-requirements.html">module 01</a>)</li>
+          <li><strong>2 System design</strong>: architecture and modes (<a href="m02-architecture.html">02</a>)</li>
+          <li><strong>3 Models</strong>: quaternion rigid-body dynamics (<a href="m03-dynamics.html">03</a>, <a href="m04-integration.html">04</a>)</li>
+          <li><strong>4 Control designs</strong>: detumble, PID, LQR (<a href="m05-control.html">05</a>)</li>
+          <li><strong>5 Safe-mode logic</strong> (<a href="m08-safe-mode.html">08</a>)</li>
+          <li><strong>6 Verification tests</strong> and Monte Carlo (<a href="m09-verification.html">09</a>)</li>
+          <li><strong>7 Results</strong>: figures, tables, data</li>
+          <li><strong>8 Project management</strong>: iteration log, risk register (this module)</li>
+          <li><strong>9 Interface and animation</strong> (<a href="m11-visualisation.html">11</a>), with the optional Python mirror and C++ stub (<a href="m10-software.html">10</a>)</li>
+        </ol>
+        <p>The project also kept a log of six iterations, each with the work implemented, the problems met, the decisions made and the lessons learned <span class="tag tag-project">Project</span>. It is reproduced below exactly, apart from numbering the rows as iterations. Each iteration delivered a usable increment, and its four columns read like a sprint retrospective; iterative delivery and retrospectives are typical content of a software-projects subject, and team planning with milestone tracking is typical content of an engineering design practice subject <span class="tag tag-typical">Typical content</span>.</p>
+        <div id="m12-log"></div>
+        <p>The Database Infrastructure and OS Internals notes suggest one more way to read the log and the register: as <em>append-only event logs</em>. The current status is then a fold over the entries, and a correction is a new entry, never an edit, which gives a free audit trail:</p>
+        <div class="eq">\[ S_n=f\big(S_{n-1},\ e_n\big),\qquad S_n=\mathrm{fold}\big(f,\ S_0,\ [e_1,\dots,e_n]\big) \]</div>
+      </div>
+    </section>
+
+    <!-- ============================================================ schedule -->
+    <section id="schedule" aria-labelledby="schedule-title">
+      <h2 id="schedule-title">Dependencies and the critical path</h2>
+      <div class="prose">
+        <p>The work has an order. Requirements come first; the dynamics model needs them; the controllers need the model; the safe-mode logic needs the controllers; verification needs all of it; the report comes last. Three pieces can run in parallel once the controllers exist: the interface and animation, the Python mirror and the C++ stub. The order is a directed acyclic graph, and any topological order of it is a valid schedule, as the Computing Algorithms notes put it.</p>
+        <p>The <dfn data-term="critical-path">critical path</dfn> method (CPM) finds the chain of tasks that fixes the finish date. A forward pass gives each task its earliest start and finish; a backward pass from the end gives the latest; the difference is the <em>float</em>, how long a task can slip without moving the end date:</p>
+        <div class="eq">\[ ES_j=\max_{i\to j}EF_i,\quad EF_j=ES_j+d_j;\qquad LF_i=\min_{i\to j}LS_j,\quad LS_i=LF_i-d_i;\qquad \text{float}_i=LS_i-ES_i \]</div>
+        <p>Tasks with zero float are critical. The Algorithms notes add the computer-science view: the critical path is the longest path in a DAG, found in linear time in topological order, even though longest path is NP-hard on general graphs. Durations are uncertain, so PERT replaces each one with an optimistic, most likely and pessimistic estimate:</p>
+        <div class="eq">\[ t_e=\frac{o+4m+p}{6},\qquad \sigma=\frac{p-o}{6},\qquad \sigma_{path}=\sqrt{\textstyle\sum_{i\in\text{path}}\sigma_i^{2}} \]</div>
+        <p>CPM with forward and backward passes, float and PERT estimates are typical content of a project-management subject <span class="tag tag-typical">Typical content</span>. Why does a long chain deserve margin? The Deep Learning and Generative AI notes make the point with chained success: if each step succeeds independently with probability \(p\), all \(n\) succeed with probability \(p^{n}\).</p>
+        <div class="eq">\[ 0.9^{10}\approx0.35 \]</div>
+        <p>Ten tasks that are each 90% likely to finish on time give only a 35% chance that the whole chain does <span class="tag tag-derived">Derived</span>. Two more tools from the notes apply. The Algorithms notes solve the 0/1 knapsack exactly by dynamic programming; applied here, it chooses which optional features fit the time budget. The Intelligent Systems notes pose timetabling as a constraint-satisfaction problem; applied here, scheduling with precedence and resource limits has the same shape.</p>
+      </div>
+
+      <figure class="widget" id="w-cpm" aria-labelledby="w-cpm-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-cpm-title">Critical path and PERT</h3>
+          <p class="widget-try"><strong>Try:</strong> raise the interface's pessimistic estimate p from 3 to 6, then set it back to 3 and switch on "Verification takes +2". <strong>Notice:</strong> the interface absorbs its delay until its float runs out and its path becomes critical; a delay on a task with no float moves the finish date one for one (from the 7.00 baseline, +2 gives 9.00).</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Durations are in iterations. The task network follows the project's order of work; the o/m/p estimates are illustrative.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ risk -->
+    <section id="risk" aria-labelledby="risk-title">
+      <h2 id="risk-title">The risk register</h2>
+      <div class="prose">
+        <p>The project's <dfn data-term="risk-register">risk register</dfn> lists six risks with a likelihood, an impact and a mitigation <span class="tag tag-project">Project</span>. Scoring each scale 1 to 3 (Low, Medium, High) gives an exposure:</p>
+        <div class="eq">\[ E=L\times I\in\{1,2,3,4,6,9\} \]</div>
+        <p>Three risks score 6: torque saturation slowing convergence (High × Medium), controller instability from excessive gain and safe-mode flapping (both Medium × High). Quaternion sign ambiguity and the toolbox dependency score 4, and irreproducible results 3 <span class="tag tag-derived">Derived</span>. Here is the register exactly as the project wrote it:</p>
+        <div id="m12-register"></div>
+        <p>What makes the register more than a list is that every mitigation became a feature you can find in this site: rate damping first and conservative gains (<a href="m05-control.html">module 05</a>), saturation in every simulation (<a href="m06-actuators.html">06</a>), the shortest-rotation error quaternion (<a href="m03-dynamics.html">03</a>), hysteresis and a minimum dwell in the safe-mode logic (<a href="m08-safe-mode.html">08</a>), the stored fallback LQR gain (<a href="m10-software.html#reproducibility">10</a>) and the fixed Monte Carlo seed with CSV outputs (<a href="m09-verification.html">09</a>).</p>
+        <p>Likelihood-times-impact matrices with a residual-risk column after treatment are typical content of both a project-management and a security-standards subject <span class="tag tag-typical">Typical content</span>. Threat and error management (anticipate threats, trap errors, manage undesired states), typical content of a human-factors-for-pilots subject, matches the register's layout; operational risk assessment with ground risk, air risk, mitigations and residual risk is typical content of a remotely piloted aircraft subject; and stakeholder analysis with weighted-criteria decisions is typical content of an aviation management subject <span class="tag tag-typical">Typical content</span>. The Data Structures notes warn that a priority queue can starve low-priority items; applied here, a register triaged by exposure needs <em>ageing</em> so that low-scored risks still get reviewed.</p>
+      </div>
+
+      <figure class="widget" id="w-risk-matrix" aria-labelledby="w-risk-matrix-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-risk-matrix-title">Interactive risk matrix</h3>
+          <p class="widget-try"><strong>Try:</strong> press "Apply mitigations", then select a token and move it with the arrow keys or by dragging. <strong>Notice:</strong> mitigation mostly lowers likelihood; saturation is the one risk whose likelihood stays High, because the wheels still saturate and the mitigation only lowers its impact by planning for it.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Starting positions are the project's register. The residual positions after mitigation are this site's illustration; the project did not score residual risk.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-illustrative">Illustrative</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ fmea -->
+    <section id="fmea" aria-labelledby="fmea-title">
+      <h2 id="fmea-title">FMEA</h2>
+      <div class="prose">
+        <p>A risk register starts from worries. A <dfn data-term="fmea">failure mode and effects analysis</dfn> starts from parts: for each way a component or function can fail, score how bad the effect is (severity S), how often it is expected (occurrence O) and how unlikely it is to be caught before it matters (detection D), each from 1 to 10:</p>
+        <div class="eq">\[ \mathrm{RPN}=S\times O\times D,\qquad 1\le\mathrm{RPN}\le1000 \]</div>
+        <p>FMEA with this risk priority number is typical content of a mechanical engineering design subject <span class="tag tag-typical">Typical content</span>. Mapped onto the project, likelihood becomes occurrence and impact becomes severity, and the detection score asks a pointed new question: <em>would the verification harness actually catch this?</em> A failure that none of the tests T01 to T06 can see earns a high D however rare it is. The Electromechanics notes suggest the hardware rows a fuller FMEA would add: wheel stall and overheating, Hall-sensor failure, momentum saturation, and closed-loop tuning tests that can oscillate.</p>
+        <p>RPN has known weaknesses: the product treats a severity-10 failure that is easy to detect like a severity-2 failure that is not, so a high severity deserves attention whatever the product says.</p>
+      </div>
+
+      <figure class="widget" id="w-fmea" aria-labelledby="w-fmea-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-fmea-title">FMEA builder</h3>
+          <p class="widget-try"><strong>Try:</strong> pick "Gyro bias" and lower its detection score as if the estimator of module 07 were added; then raise the stuck wheel's occurrence. <strong>Notice:</strong> the ranking is driven as much by D as by S, and the two failures the project's tests cannot see at all rise to the top.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>The failure modes are from the project's risks plus two hardware and sensor modes; every S, O and D score is an illustrative starting point for discussion.</p>
+          <span class="tags"><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-extension">Extension</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ bowtie -->
+    <section id="bowtie" aria-labelledby="bowtie-title">
+      <h2 id="bowtie-title">Bow-tie: loss of attitude control</h2>
+      <div class="prose">
+        <p>A <dfn data-term="bow-tie">bow-tie</dfn> puts one unwanted <em>top event</em> in the middle, here <strong>loss of attitude control</strong>, with its causes on the left and its consequences on the right. Between them sit two kinds of barrier: <em>preventive</em> barriers that stop a threat from causing the top event, and <em>recovery</em> barriers that stop the top event from turning into a consequence. Bow-tie analysis, risk matrices and fault trees are typical content of a safety-management subject <span class="tag tag-typical">Typical content</span>.</p>
+        <ul>
+          <li><strong>Threats:</strong> excessive gain, torque saturation, quaternion sign flips, and sensor faults <span class="tag tag-extension">Extension</span>.</li>
+          <li><strong>Preventive barriers:</strong> conservative tuning, saturation in every simulation, the shortest-rotation error <span class="tag tag-project">Project</span>.</li>
+          <li><strong>Recovery barriers:</strong> safe-mode entry at 6 deg/s or after a 0.5 s fault, detumble, then hold <span class="tag tag-project">Project</span>.</li>
+          <li><strong>Consequences:</strong> a tumbling spacecraft, a power-negative attitude, lost communications.</li>
+        </ul>
+        <p>The left side is where the project's design choices live and the right side is where its safe mode lives. A fault tree turns the picture into numbers: for independent events, the top event "a fault occurs <em>and</em> safe-mode entry fails" has probability</p>
+        <div class="eq">\[ P(A\wedge B)=P(A)\,P(B),\qquad P(A\vee B)=P(A)+P(B)-P(A)\,P(B) \]</div>
+        <p>so a recovery barrier that fails one time in a hundred cuts the risk from a fault a hundredfold, as long as its failures are independent of the fault <span class="tag tag-illustrative">Illustrative</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-bowtie" aria-labelledby="w-bowtie-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-bowtie-title">Bow-tie builder</h3>
+          <p class="widget-try"><strong>Try:</strong> switch off "Safe-mode entry", then switch it back on and switch off "Hold" instead. <strong>Notice:</strong> one missing recovery barrier exposes every consequence that depends on it; the sensor-fault threat has no preventive barrier at all until the estimation extension is switched on.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Recovery barriers act in sequence (detumble and hold need safe-mode entry first); a preventive barrier blocks its own threat line.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-extension">Extension</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ lessons -->
+    <section id="lessons" aria-labelledby="lessons-title">
+      <h2 id="lessons-title">Lessons from the log</h2>
+      <div class="prose">
+        <p>Each iteration of the log ends with one sentence of lesson learned <span class="tag tag-project">Project</span>. Six sentences is not much, but each one names a habit, and each habit is visible somewhere on this site:</p>
+        <div id="m12-lessons"></div>
+        <p>The Design of Machine Elements notes describe the same discipline for a design logbook: every decision with its reason, every number with its source, every change recorded as old and new values, and open questions listed. They also give a rule that applies far beyond machine design: <em>name the doubt instead of inflating the factor</em>. A risk register is exactly that: an uncertainty such as the inertia or the disturbance bound is written down and tested, rather than buried under a blanket margin.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ scope -->
+    <section id="scope" aria-labelledby="scope-title">
+      <h2 id="scope-title">Scope decisions</h2>
+      <div class="prose">
+        <p>In its first iteration the project saw that its scope "could expand into estimator design" and decided to "keep estimator/noise model out of first project scope" <span class="tag tag-project">Project</span>. The requirements then said so in an assumption: the true simulated state is used for feedback <span class="tag tag-project">Project</span>. Declaring an item out of scope prevents scope creep and turns it into a planned extension; on this site that extension is <a href="m07-sensors.html">module 07</a>.</p>
+        <p>Was that the right call? The Software Engineering and Architecture notes give the test. <em>YAGNI</em> ("you aren't gonna need it") applies to features and abstractions, but not to decisions that are expensive to reverse. Leaving out the estimator is <strong>reversible</strong>: it can be added later behind the same feedback interface, so deferring it was cheap. The scalar-first quaternion convention, the frame definitions and the units are <strong>expensive to reverse</strong>, because every equation, file and test depends on them; the project states them once in its notes (scalar-first quaternions, a diagonal inertia in the body frame, SI units with thresholds quoted in degrees) and keeps them fixed everywhere <span class="tag tag-project">Project</span>.</p>
+        <p>The Algorithms notes teach the 0/1 knapsack; applied here, the rest of scope selection is one: each optional feature (the interactive interface, the Python mirror, the C++ stub, the animations) has a value \(v_i\) and an effort \(c_i\), and the budget is fixed:</p>
+        <div class="eq">\[ \max_{x\in\{0,1\}^n}\ \sum_i v_i x_i\quad\text{subject to}\quad \sum_i c_i x_i\le B \]</div>
+        <p>A greedy "best value per hour first" rule can miss the optimum for 0/1 choices; dynamic programming finds it exactly. The Intelligent Systems notes use information gain to choose the next split of a decision tree; applied here, it is a useful tie-breaker: study first the risk or parameter whose answer most reduces uncertainty about the outcome.</p>
+      </div>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <p class="in-short"><strong>In short:</strong> the project was planned like any engineering job: a work breakdown, an ordered network with a critical path, six iterations with honest retrospectives, and a register in which every top risk became a design feature. The FMEA adds the question "would we catch it?", and the bow-tie shows which barriers stand between a threat and a tumbling spacecraft. The subjects below supplied those methods.</p>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

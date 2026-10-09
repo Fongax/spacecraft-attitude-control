@@ -1,0 +1,99 @@
+/*
+ * m11.css: Module 11, visualisation and UI (package P6).
+ * Everything is scoped under body[data-page="m11"]; shared components keep their own styles.
+ */
+
+body[data-page="m11"] .in-short {
+  max-width: 72ch;
+  margin-block: var(--s6) var(--s4);
+  padding-inline-start: var(--s3);
+  border-inline-start: 3px solid var(--accent);
+}
+body[data-page="m11"] .m11-wide { grid-column: 1 / -1; min-width: 0; }
+body[data-page="m11"] .m11-small { font-size: var(--fs-sm); color: var(--text-2); margin-block: var(--s2) 0; }
+body[data-page="m11"] .m11-mono { font-family: var(--font-mono); font-size: var(--fs-sm); overflow-wrap: anywhere; margin-block-end: var(--s2); }
+body[data-page="m11"] .widget-output > div > .plot { margin-block-end: var(--s3); }
+
+/* W11.1 pipeline stages */
+body[data-page="m11"] .m11-stages {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: var(--s3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+body[data-page="m11"] .m11-stage {
+  margin: 0; min-width: 0;
+  border: 1px solid var(--border); border-radius: var(--r2);
+  padding: var(--s3); background: var(--surface);
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+body[data-page="m11"] .m11-stage.is-current { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+body[data-page="m11"] .m11-stage.is-dim { opacity: 0.45; }
+body[data-page="m11"] .m11-stage-title { font-size: var(--fs-sm); margin: 0 0 var(--s2); }
+body[data-page="m11"] .m11-stage .table caption { font-size: var(--fs-xs); }
+body[data-page="m11"] .m11-stage .scroll-x { margin-block-end: var(--s2); }
+body[data-page="m11"] .m11-wire { max-width: 360px; }
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="m11"] .m11-stage { transition: none; }
+}
+
+/* plot anatomy */
+body[data-page="m11"] .m11-stack.is-grey { filter: grayscale(1); }
+
+/* W11.2 playback */
+body[data-page="m11"] .m11-pb-top {
+  display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); align-items: start; margin-block-end: var(--s3);
+}
+@media (min-width: 760px) {
+  body[data-page="m11"] .m11-pb-top { grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); }
+}
+body[data-page="m11"] .m11-pb-wire { max-width: 300px; }
+
+/* W11.3 annunciator lab */
+body[data-page="m11"] .m11-score { font-weight: 600; margin: 0; }
+body[data-page="m11"] .m11-lab { display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); margin-block-start: var(--s4); }
+@media (min-width: 860px) {
+  body[data-page="m11"] .m11-lab { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+body[data-page="m11"] .m11-panel { border: 1px solid var(--border); border-radius: var(--r2); padding: var(--s3); min-width: 0; background: var(--surface); }
+body[data-page="m11"] .m11-panel h4 { margin: 0 0 var(--s2); font-size: var(--fs-base); }
+body[data-page="m11"] .m11-cover {
+  display: flex; align-items: center; justify-content: center; min-height: 200px; text-align: center;
+  border: 1px dashed var(--border-strong); border-radius: var(--r1); color: var(--text-2);
+  background: repeating-linear-gradient(135deg, var(--surface-2) 0 8px, var(--surface) 8px 16px);
+}
+body[data-page="m11"] .m11-cover p { margin: 0; padding: var(--s3); background: var(--surface); border-radius: var(--r1); }
+body[data-page="m11"] .m11-qcard { border: 1px solid var(--border-strong); border-radius: var(--r2); padding: var(--s3) var(--s4); background: var(--surface); }
+body[data-page="m11"] .m11-qhead { font-size: var(--fs-sm); color: var(--text-2); font-weight: 600; margin-block-end: var(--s2); }
+body[data-page="m11"] .m11-q { border: 0; margin: 0 0 var(--s3); padding: 0; }
+body[data-page="m11"] .m11-q legend { font-weight: 600; margin-block-end: var(--s2); padding: 0; }
+body[data-page="m11"] .m11-opt {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2);
+  min-height: var(--hit); padding: var(--s1) var(--s2); border-radius: var(--r1); cursor: pointer;
+}
+body[data-page="m11"] .m11-opt:hover { background: var(--surface-2); }
+body[data-page="m11"] .m11-opt input { width: 18px; height: 18px; margin: 0; }
+body[data-page="m11"] .m11-mark { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-sm); font-weight: 600; }
+body[data-page="m11"] .m11-mark.ok { color: var(--ok); }
+body[data-page="m11"] .m11-mark.bad { color: var(--bad); }
+body[data-page="m11"] .m11-mark svg { width: 14px; height: 14px; }
+body[data-page="m11"] .m11-explain { border-inline-start: 3px solid var(--accent); padding-inline-start: var(--s3); }
+
+/* W11.4 views */
+body[data-page="m11"] .m11-view-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+body[data-page="m11"] .m11-views { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); }
+body[data-page="m11"] .m11-view { border: 1px solid var(--border); border-radius: var(--r2); padding: var(--s3); min-width: 0; background: var(--surface); }
+body[data-page="m11"] .m11-view h4 { margin: 0 0 var(--s2); font-size: var(--fs-sm); }
+body[data-page="m11"] .m11-feed { margin: 0; padding-inline-start: 1.4em; font-size: var(--fs-sm); color: var(--text-2); }
+body[data-page="m11"] .m11-feed li { margin-block-end: var(--s1); }
+body[data-page="m11"] .m11-feed li.is-past { color: var(--text); }
+body[data-page="m11"] .m11-feed li[aria-current="true"] { font-weight: 700; }
+body[data-page="m11"] .m11-replay { margin-block-start: var(--s3); }
+
+/* timing button */
+body[data-page="m11"] .m11-bench { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+body[data-page="m11"] .m11-cover svg { width: 18px; height: 18px; vertical-align: -3px; }
+
+/* LOCAL (request P0): let a quiz option wrap its "Correct answer" mark onto a new line, so an
+   option with a long unbreakable word (SAFE_DETUMBLE) cannot widen the page at 360px. */
+body[data-page="m11"] .quiz-option { flex-wrap: wrap; }
+body[data-page="m11"] .quiz-option .quiz-text { flex: 1 1 10em; min-width: 0; }

@@ -1,0 +1,91 @@
+/*
+ * m06.css: Module 06, actuators (package P4).
+ * Everything is scoped under body[data-page="m06"]; shared components keep their own styles.
+ */
+
+body[data-page="m06"] .in-short {
+  max-width: 72ch;
+  margin-block: var(--s6) var(--s4);
+  padding-inline-start: var(--s3);
+  border-inline-start: 3px solid var(--accent);
+}
+body[data-page="m06"] .widget-output > div > .plot,
+body[data-page="m06"] .widget-output > .grid-2 { margin-block-end: var(--s4); }
+body[data-page="m06"] .widget-output > .status-line { margin-block-end: var(--s3); }
+
+/* shared two-column stage: a drawing beside its readouts, stacked below 700px */
+body[data-page="m06"] .tt-top,
+body[data-page="m06"] .bk-top,
+body[data-page="m06"] .cs-top {
+  display: grid;
+  gap: var(--s4);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  margin-block-end: var(--s4);
+}
+@media (min-width: 700px) {
+  body[data-page="m06"] .tt-top { grid-template-columns: minmax(200px, 280px) minmax(0, 1fr); }
+  body[data-page="m06"] .bk-top { grid-template-columns: minmax(140px, 200px) minmax(0, 1fr); }
+  body[data-page="m06"] .cs-top { grid-template-columns: minmax(240px, 340px) minmax(0, 1fr); }
+}
+body[data-page="m06"] .tt-side .readouts,
+body[data-page="m06"] .bk-side .readouts { flex-direction: column; gap: var(--s2); }
+body[data-page="m06"] .tt-side .readouts > div,
+body[data-page="m06"] .bk-side .readouts > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--s3); border-bottom: 1px solid var(--border); padding-block-end: 2px; }
+
+/* W6.1 turntable */
+body[data-page="m06"] .tt-stage { max-width: 280px; margin-inline: auto; width: 100%; }
+body[data-page="m06"] .tt-svg { display: block; width: 100%; height: auto; background: var(--bg-3d); border: 1px solid var(--border); border-radius: var(--r2); }
+body[data-page="m06"] .tt-bus { fill: var(--surface-3D); stroke: var(--text-2); stroke-width: 2; }
+body[data-page="m06"] .tt-panel { fill: var(--panel); stroke: var(--text-2); stroke-width: 1; }
+body[data-page="m06"] .tt-mark-body { fill: var(--axis-y); }
+body[data-page="m06"] .tt-rim { fill: var(--surface); stroke: var(--accent); stroke-width: 4; }
+body[data-page="m06"] .tt-spokes { stroke: var(--accent); stroke-width: 3; fill: none; stroke-linecap: round; }
+body[data-page="m06"] .tt-mark-wheel { fill: var(--warn); }
+body[data-page="m06"] .tt-hub { fill: var(--text-2); }
+body[data-page="m06"] .tt-caption { margin: var(--s1) 0 0; font-size: var(--fs-sm); color: var(--text-2); text-align: center; }
+
+/* W6.3 bucket */
+body[data-page="m06"] .bk-stage { max-width: 200px; margin-inline: auto; width: 100%; }
+body[data-page="m06"] .bk-svg { display: block; width: 100%; height: auto; }
+body[data-page="m06"] .bk-wall { fill: none; stroke: var(--text-2); stroke-width: 3; stroke-linejoin: round; }
+body[data-page="m06"] .bk-fill { fill: var(--accent); opacity: 0.55; }
+body[data-page="m06"] .bk-fill.high { fill: var(--warn); opacity: 0.65; }
+body[data-page="m06"] .bk-fill.full { fill: var(--bad); opacity: 0.7; }
+body[data-page="m06"] .bk-max { stroke: var(--line-req); stroke-width: 1.5; stroke-dasharray: 5 4; }
+body[data-page="m06"] .bk-lab { fill: var(--line-req); font-size: 10px; font-family: var(--font-mono); }
+body[data-page="m06"] .bk-pct { fill: var(--text); font-size: 18px; font-weight: 700; font-family: var(--font-mono); }
+body[data-page="m06"] .bk-in, body[data-page="m06"] .bk-drain { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+body[data-page="m06"] .bk-in { stroke: var(--bad); }
+body[data-page="m06"] .bk-drain { stroke: var(--ok); }
+body[data-page="m06"] .bk-state { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); color: var(--text); margin-block-start: var(--s3); }
+
+/* W6.4 clip vs scale */
+body[data-page="m06"] .cs-stage { max-width: 340px; margin-inline: auto; width: 100%; }
+body[data-page="m06"] .cs-svg { display: block; width: 100%; height: auto; background: var(--plot-bg); border: 1px solid var(--border); border-radius: var(--r2); touch-action: none; cursor: crosshair; }
+body[data-page="m06"] .cs-gridline { stroke: var(--grid); stroke-width: 1; }
+body[data-page="m06"] .cs-axis { stroke: var(--border-strong); stroke-width: 1.2; }
+body[data-page="m06"] .cs-box { fill: var(--band-ok); stroke: var(--ok); stroke-width: 2; }
+body[data-page="m06"] .cs-lab { fill: var(--text-2); font-size: 11px; font-family: var(--font-sans); }
+body[data-page="m06"] .cs-cmd { stroke: var(--accent); stroke-width: 3; }
+body[data-page="m06"] .cs-clip { stroke: var(--axis-x); stroke-width: 2.5; stroke-dasharray: 7 4; }
+body[data-page="m06"] .cs-scale { stroke: var(--axis-y); stroke-width: 2.5; stroke-dasharray: 2 3; }
+body[data-page="m06"] .cs-proj { stroke: var(--text-2); stroke-width: 1; stroke-dasharray: 3 3; }
+body[data-page="m06"] .cs-clip-pt { fill: var(--axis-x); stroke: var(--plot-bg); stroke-width: 1.5; }
+body[data-page="m06"] .cs-scale-pt { fill: var(--axis-y); stroke: var(--plot-bg); stroke-width: 1.5; }
+body[data-page="m06"] .cs-handle { fill: var(--accent); fill-opacity: 0.25; stroke: var(--accent); stroke-width: 2.5; cursor: grab; }
+/* The handle is an SVG circle, where outline painting differs between engines, so focus is shown by
+   a sibling ring drawn in SVG (offset from the handle) plus a change of the handle's own stroke. */
+body[data-page="m06"] .cs-handle:focus { outline: none; }
+body[data-page="m06"] .cs-handle:focus-visible { stroke: var(--text); stroke-width: 3; }
+body[data-page="m06"] .cs-handle-ring { fill: none; stroke: var(--focus); stroke-width: 2.5; pointer-events: none; visibility: hidden; }
+body[data-page="m06"] .cs-handle:focus-visible + .cs-handle-ring { visibility: visible; }
+@media (forced-colors: active) {
+  body[data-page="m06"] .cs-handle-ring { stroke: Highlight; }
+}
+body[data-page="m06"] .cs-legend { list-style: none; margin: var(--s2) 0 0; padding: 0; display: grid; gap: 2px; font-size: var(--fs-sm); color: var(--text-2); }
+body[data-page="m06"] .cs-legend li { display: flex; align-items: center; gap: var(--s2); margin: 0; }
+body[data-page="m06"] .cs-legend .sw { flex: none; width: 26px; height: 0; border-top: 3px solid; }
+body[data-page="m06"] .cs-legend .sw.cs-sw-cmd { border-top-color: var(--accent); }
+body[data-page="m06"] .cs-legend .sw.cs-sw-clip { border-top-color: var(--axis-x); border-top-style: dashed; }
+body[data-page="m06"] .cs-legend .sw.cs-sw-scale { border-top-color: var(--axis-y); border-top-style: dotted; }

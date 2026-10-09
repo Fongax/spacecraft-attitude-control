@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Components · Attitude Control: The Big Picture</title>
+<meta name="description" content="Kitchen sink of every shared component of the site's UI kit, in both colour themes.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/vendor/katex/katex.min.css">
+<script defer src="../assets/vendor/katex/katex.min.js"></script>
+<script defer src="../assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../assets/js/adcs-math.js"></script>
+<script defer src="../assets/js/adcs-sim.js"></script>
+<script defer src="../assets/js/adcs-data.js"></script>
+<script defer src="../assets/js/adcs-ui.js"></script>
+<script defer src="../assets/js/adcs-plot.js"></script>
+<script defer src="../assets/js/adcs-wire.js"></script>
+<script defer src="components.js"></script>
+<style>
+  /* Kitchen-sink layout only (not part of the UI kit). */
+  body[data-page="components"] .k-section { padding-block-start: var(--s2); border-top: 1px solid var(--border); margin-block-start: var(--s6); }
+  body[data-page="components"] .k-section > h2 { margin-block-start: var(--s3); }
+  body[data-page="components"] .k-demo { display: grid; gap: var(--s4); margin-block: var(--s3) var(--s4); }
+  body[data-page="components"] .k-row { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+  body[data-page="components"] .k-row + .k-row { margin-block-start: var(--s3); }
+  body[data-page="components"] .k-toc ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); font-size: var(--fs-sm); }
+  body[data-page="components"] .k-toc li { margin: 0; }
+  body[data-page="components"] .k-toc a { display: inline-flex; align-items: center; min-height: var(--hit); }
+  body[data-page="components"] .k-note { font-size: var(--fs-sm); color: var(--text-2); }
+  body[data-page="components"] .k-wire { max-width: 420px; }
+  body[data-page="components"] .k-section > .k-row,
+  body[data-page="components"] .k-section > .lamps,
+  body[data-page="components"] .k-section > .status-line { margin-block-end: var(--s4); }
+</style>
+</head>
+<body data-page="components">
+<div class="site-header-slot" data-chrome="header"></div>
+
+<main id="main">
+  <div class="container">
+    <h1>Component kitchen sink</h1>
+    <p class="lede">Every shared component of the UI kit, rendered with the same CSS and JavaScript the pages use. Page packages copy their patterns from here.</p>
+    <div class="k-row" id="theme-buttons" role="group" aria-label="Preview theme"></div>
+
+    <nav class="k-toc" aria-label="Sections on this page">
+      <ul>
+        <li><a href="#k-chrome">Chrome</a></li>
+        <li><a href="#k-type">Typography</a></li>
+        <li><a href="#k-buttons">Buttons</a></li>
+        <li><a href="#k-controls">Controls</a></li>
+        <li><a href="#k-labels">Tags and badges</a></li>
+        <li><a href="#k-cards">Cards and callouts</a></li>
+        <li><a href="#k-provenance">Provenance</a></li>
+        <li><a href="#k-quiz">Quiz</a></li>
+        <li><a href="#k-sim">Simulation displays</a></li>
+        <li><a href="#k-plots">Plots</a></li>
+        <li><a href="#k-wire">Wireframe</a></li>
+        <li><a href="#k-overlays">Popover and tabs</a></li>
+        <li><a href="#k-tables">Tables and matrix</a></li>
+        <li><a href="#k-maths">Equations and terms</a></li>
+        <li><a href="#k-files">Files and status</a></li>
+      </ul>
+    </nav>
+
+    <!-- ============================================================ chrome -->
+    <section class="k-section" id="k-chrome" aria-labelledby="k-chrome-h">
+      <h2 id="k-chrome-h">Chrome</h2>
+      <p>The skip link, header (site name, navigation, theme toggle) and footer above and below this page come from <code>ADCS.ui.mountChrome({page})</code>. Below 900px the navigation folds behind the Menu button. Module pages also get a breadcrumb, a 13-dot module strip and a pager:</p>
+      <div class="k-demo">
+        <div class="chrome-crumbs" id="demo-crumbs"></div>
+        <div id="demo-pager"></div>
+      </div>
+      <header class="module-hero">
+        <span class="module-num">MODULE 05</span>
+        <p class="h1-sample" style="font-size:var(--fs-xl);font-weight:700;line-height:1.25;margin:0 0 var(--s3)">Control design</p>
+        <p class="module-purpose">Shape the closed-loop response with PID, LQR and detumble laws.</p>
+        <p class="module-meta"><span class="phase-tag">Phase: Design</span> <span>About 40 min</span></p>
+        <p class="prereqs" id="demo-prereqs"></p>
+      </header>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>ADCS.ui.ready(function () {
+  ADCS.ui.mountChrome({ page: 'm05' });   // 'index' | 'simulator' | 'learn' | 'atlas' | 'glossary' | 'about' | 'm01'…'m13'
+});
+// Module pages: empty &lt;nav class="module-pager"&gt;, [data-auto="prereqs"], [data-auto="simlinks"]
+// and [data-auto="objectives"] are filled from ADCS.data. Parts on their own:
+ADCS.ui.breadcrumb('m05'); ADCS.ui.moduleStrip('m05'); ADCS.ui.pager('m05');</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ typography -->
+    <section class="k-section" id="k-type" aria-labelledby="k-type-h">
+      <h2 id="k-type-h">Typography and layout</h2>
+      <div class="prose">
+        <p class="lede">A lede paragraph introduces a page in one or two sentences.</p>
+        <p>Body text runs at 16px with a line height of 1.6 inside <code>.prose</code> (72 characters wide). Links look <a href="#k-type">like this</a>, keys like <kbd>Space</kbd> and <kbd>←</kbd>, inline code like <code>ADCS.sim.run(config)</code>, and highlighted search hits like <mark>quaternion</mark>.</p>
+        <h3>A third-level heading</h3>
+        <p class="muted">Muted text uses <code>--text-2</code> and still meets 4.5:1 on every surface.</p>
+        <ul><li>Lists use the body size.</li><li>Numbers in tables use tabular figures: <span class="num">12.47</span> deg/s.</li></ul>
+      </div>
+      <div class="grid-3">
+        <div class="card"><h3>.card</h3><p>Grids collapse to one column below 600px (.grid-3) or 900px (.grid-2).</p></div>
+        <a class="card card-link" href="#k-type"><span class="card-kicker">Entry card</span><h3 class="card-title">.card.card-link</h3><p>The whole card is the link.</p></a>
+        <div class="card"><h3>Stats</h3><div id="demo-stats"></div></div>
+      </div>
+    </section>
+
+    <!-- ============================================================ buttons -->
+    <section class="k-section" id="k-buttons" aria-labelledby="k-buttons-h">
+      <h2 id="k-buttons-h">Buttons</h2>
+      <div class="k-row" id="demo-buttons"></div>
+      <div class="k-row">
+        <button type="button" class="btn primary">Static .btn.primary</button>
+        <button type="button" class="btn secondary">.btn.secondary</button>
+        <button type="button" class="btn ghost">.btn.ghost</button>
+        <button type="button" class="btn secondary" disabled>Disabled</button>
+        <button type="button" class="link">button.link</button>
+      </div>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>const run = ADCS.ui.button({ label: 'Run', kind: 'primary', icon: 'play', onClick: go });
+const csv = ADCS.ui.button({ label: 'Download CSV', icon: 'download' });
+const reset = ADCS.ui.button({ label: 'Reset camera', icon: 'reset', iconOnly: true });</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ controls -->
+    <section class="k-section" id="k-controls" aria-labelledby="k-controls-h">
+      <h2 id="k-controls-h">Controls</h2>
+      <p>Each control returns <code>{el, value, set(v), on('change', fn)}</code>, is keyboard-operable and labelled. <code>set()</code> does not fire <code>change</code>.</p>
+      <div class="widget-controls" id="demo-controls"></div>
+      <p class="status-line" id="demo-control-values" aria-live="polite"></p>
+      <div class="widget-controls">
+        <div class="field">
+          <label class="field-label" for="demo-text">Text input with an error</label>
+          <input type="text" id="demo-text" value="REQ-F1 shall…" aria-invalid="true" aria-describedby="demo-text-err">
+          <p class="field-error" id="demo-text-err">No number with a unit.</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="demo-area">Textarea</label>
+          <textarea id="demo-area" rows="3">The system shall stabilise angular rates below 0.5 deg/s within 60 s of safe-mode entry.</textarea>
+        </div>
+      </div>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>const kp = ADCS.ui.slider({ id: 'kp', label: 'Kp', min: 0, max: 0.1, step: 0.001, value: 0.02, unit: 'N m', tag: 'site', help: '…' });
+const r  = ADCS.ui.slider({ id: 'r', label: 'r', min: 100, max: 20000, value: 2000, log: true, tag: 'project' });
+const sm = ADCS.ui.toggle({ id: 'safe', label: 'Safe mode', checked: true, tag: 'project' });
+const ctl = ADCS.ui.segmented({ id: 'ctl', label: 'Controller', value: 'PID',
+  options: [{ value: 'PID', label: 'PID' }, { value: 'LQR', label: 'LQR' }, { value: 'DETUMBLE', label: 'Detumble only' }, { value: 'NONE', label: 'None' }] });
+const preset = ADCS.ui.select({ id: 'preset', label: 'Preset', options: [{ value: 'T01', label: 'T01 PID nominal' }] });
+kp.on('change', ADCS.ui.debounce(rerun, 200));</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ labels -->
+    <section class="k-section" id="k-labels" aria-labelledby="k-labels-h">
+      <h2 id="k-labels-h">Tags, badges, pills and chips</h2>
+      <h3>Honesty tags</h3>
+      <div class="k-row" id="demo-tags"></div>
+      <div id="demo-legend"></div>
+      <h3>Badges (always icon and text)</h3>
+      <div class="k-row" id="demo-badges"></div>
+      <h3>Strength pills and evidence badges</h3>
+      <div class="k-row" id="demo-pills"></div>
+      <h3>Chips (toggle buttons, aria-pressed)</h3>
+      <div class="chips" id="demo-chips"></div>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>ADCS.ui.tag('project');            // project | derived | site | option | illustrative | extension | analogy | typical
+ADCS.ui.badge('pass');             // pass | fail | na, with icon
+ADCS.ui.pill('strong');            // strong | moderate | weak
+ADCS.ui.evidence('outline');       // notes | partial | outline ("Typical content")
+ADCS.ui.chip({ label: 'Mathematics', dot: '--d-math', pressed: true }).on('change', fn);
+ADCS.ui.legend();                  // &lt;details class="legend"&gt; explaining every label</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ cards -->
+    <section class="k-section" id="k-cards" aria-labelledby="k-cards-h">
+      <h2 id="k-cards-h">Widget card, callouts and objectives</h2>
+      <section class="objectives" aria-labelledby="demo-obj-h">
+        <h2 id="demo-obj-h">By the end you can…</h2>
+        <ul><li>Pick PID gains and read overshoot and settling time.</li><li>Explain why the integrator needs a clamp.</li></ul>
+      </section>
+      <div id="demo-widget"></div>
+      <figure class="widget" id="w-static-sample" aria-labelledby="w-static-sample-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-static-sample-title">Static widget markup</h3>
+          <p class="widget-try"><strong>Try:</strong> copy this figure into a module page. <strong>Notice:</strong> the head is the figcaption.</p>
+        </figcaption>
+        <div class="widget-body"><p>Controls go in <code>.widget-controls</code>, results in <code>.widget-output</code>.</p></div>
+        <div class="widget-foot"><p>Footer notes and tags.</p><span class="tags"><span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span></span></div>
+      </figure>
+      <div id="demo-callouts"></div>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>const w = ADCS.ui.widget({ id: 'pid', title: 'PID step response', try: 'Raise Ki.', notice: 'Overshoot grows.', tags: ['site'] });
+section.appendChild(w.el);  // w.body, w.foot
+ADCS.ui.callout('info', 'Title', 'Text');   // info | warn | ext | error
+ADCS.ui.showError(w.body, err);             // inline RangeError from ADCS.sim.run; ADCS.ui.clearError(w.body)</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ provenance -->
+    <section class="k-section" id="k-provenance" aria-labelledby="k-provenance-h">
+      <h2 id="k-provenance-h">Provenance box (rendered for m05)</h2>
+      <p class="k-note">Rendered only by <code>ADCS.ui.renderProvenance(el, 'm05')</code> from <code>ADCS.data</code>; pages never hand-write it.</p>
+      <div id="demo-provenance"></div>
+    </section>
+
+    <!-- ============================================================ quiz -->
+    <section class="k-section quiz" id="k-quiz" aria-labelledby="k-quiz-h">
+      <h2 id="k-quiz-h">Quiz (predict, then reveal)</h2>
+      <div id="demo-quiz"></div>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>ADCS.ui.quiz(document.getElementById('quiz'), [
+  { q: 'Which kind of evidence can refute REQ-S1?', options: ['…', '…', '…'], correct: 0, explain: '…' }
+]);</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ simulation displays -->
+    <section class="k-section" id="k-sim" aria-labelledby="k-sim-h">
+      <h2 id="k-sim-h">Simulation displays</h2>
+      <p id="demo-run-note" class="k-note"></p>
+      <div class="k-row" id="demo-modepills"></div>
+      <div class="lamps" id="demo-lamps"></div>
+      <div class="widget-controls" id="demo-scrub"></div>
+      <div class="grid-2">
+        <div id="demo-annunciator"></div>
+        <div id="demo-metrics"></div>
+      </div>
+      <div id="demo-reqs"></div>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>const ann = ADCS.ui.modeAnnunciator(el);
+const badges = ADCS.ui.reqBadges(el2);
+const metrics = ADCS.ui.metricsTable(el3);
+const result = ADCS.sim.run(ADCS.presets.T03);
+badges.update(result.req); metrics.update(result.metrics);
+ann.update(ADCS.sim.sampleAt(result, t), result);   // on every cursor move</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ plots -->
+    <section class="k-section" id="k-plots" aria-labelledby="k-plots-h">
+      <h2 id="k-plots-h">Plots</h2>
+      <p class="k-note">Hover or tap for values, click to seek, focus a plot and use <kbd>←</kbd> <kbd>→</kbd> (with <kbd>Shift</kbd> for bigger steps). Legend buttons hide and show series. Every plot has a Data (CSV) button and a text summary.</p>
+      <div class="grid-2">
+        <div id="demo-plot-err"></div>
+        <div id="demo-plot-rate"></div>
+      </div>
+      <div id="demo-plot-tau"></div>
+      <div id="demo-timeline"></div>
+      <div class="grid-2">
+        <div id="demo-hist"></div>
+        <div id="demo-scatter"></div>
+      </div>
+      <div class="grid-2">
+        <div id="demo-splane"></div>
+        <div id="demo-bars"></div>
+      </div>
+      <div id="demo-logx"></div>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>const p = ADCS.plot.line(el, { title: 'Torque', yLabel: 'τ (mN m)', y: { symmetric: true },
+  series: [{ id: 'x', label: 'τx', color: '--axis-x' }, { id: 'y', label: 'τy', color: '--axis-y', dash: [6, 4] }],
+  hlines: [{ y: 3, label: '+3 mN m', color: '--line-req' }], vbands: [{ x0: 45, x1: 60, hatch: true }] });
+p.set('x', result.t, tauX);  p.set('y', result.t, result.tau, { stride: 3, offset: 1 });
+p.onSeek(function (t) { … }); p.setCursor(t); p.summary('Peak torque 3.00 mN m.');
+ADCS.plot.timeline(el, { segments: ADCS.modes.runLengths(result.mode, result.t), faults: [{ t0: 45, t1: 60 }], events: [4.5] });
+ADCS.plot.histogram(el, { bins, markers: [{ x: 60, label: '60 s limit' }] });
+ADCS.plot.scatter(el, { points, colorScale: { min, max, label: 'peak rate (deg/s)' }, onPick: id => … });
+ADCS.plot.splane(el, { poles, zetaLines: [0.35, 0.72, 1], wnCircles: [0.5, 1], locus });
+ADCS.plot.bars(el, { items, log: true, refLines: [{ v: 2e-5, label: 'disturbance bound' }] });</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ wireframe -->
+    <section class="k-section" id="k-wire" aria-labelledby="k-wire-h">
+      <h2 id="k-wire-h">Wireframe</h2>
+      <p class="k-note">Drag, or focus it and use the arrow keys, to rotate the camera; double-click or <kbd>Home</kbd> resets it. The scrub slider in "Simulation displays" drives the attitude.</p>
+      <div class="grid-2">
+        <div class="wire k-wire"><canvas id="demo-wire"></canvas></div>
+        <div id="demo-pipeline"></div>
+      </div>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>const w = ADCS.wire.create(canvas, { trail: 300, view: { az: -35, el: 22 } });
+w.setQuat(sample.q);
+w.setArrows([{ v: [wx, wy, wz], frame: 'body', color: '--accent', label: 'ω' }]);
+w.render();
+w.pipeline(q);   // {R, vertsBody, vertsWorld, verts2D, faceOrder}</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ overlays -->
+    <section class="k-section" id="k-overlays" aria-labelledby="k-overlays-h">
+      <h2 id="k-overlays-h">Popover, tabs and disclosure</h2>
+      <div class="k-row"><button type="button" class="btn secondary" id="demo-pop-btn">Open a popover</button></div>
+      <div id="demo-tabs"></div>
+      <details class="disclosure"><summary>Disclosure (details.disclosure)</summary><div class="details-body"><p>Advanced controls and "More plots" live in disclosures.</p></div></details>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>ADCS.ui.popover(button, function () { return contentNode; }, { label: 'REQ-S1 details' });
+const tabs = ADCS.ui.tabs(el, [{ id: 'cards', label: 'Cards', content: node }, …], { label: 'Atlas views' });
+tabs.on('change', function (id) { … });
+ADCS.ui.details('More plots', false);   // returns &lt;details&gt;; append to .body</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ tables -->
+    <section class="k-section" id="k-tables" aria-labelledby="k-tables-h">
+      <h2 id="k-tables-h">Tables and matrix</h2>
+      <p class="k-note">Wide tables sit in <code>.scroll-x</code>, which scrolls inside its box with a scroll shadow; the page never scrolls sideways.</p>
+      <div id="demo-table"></div>
+      <div id="demo-matrix"></div>
+    </section>
+
+    <!-- ============================================================ maths -->
+    <section class="k-section" id="k-maths" aria-labelledby="k-maths-h">
+      <h2 id="k-maths-h">Equations and glossary terms</h2>
+      <div class="prose">
+        <p>Inline maths such as \(\dot q = \tfrac12\, q \otimes [0, \omega]\) and a display equation in an <code>.eq</code> block:</p>
+        <div class="eq">\[ J\dot{\omega} + \omega \times J\omega = \tau + \tau_d, \qquad K = R^{-1}B^{\mathsf T}P \]</div>
+        <p>A long display equation scrolls inside its box at 360px:</p>
+        <div class="eq">\[ q_e = q_{ref}^{*} \otimes q, \quad \theta_e = 2\,\operatorname{atan2}\!\left(\lVert q_{e,v} \rVert,\; q_{e,0}\right), \quad \tau_{cmd} = -K_p\, q_{e,v} - K_d\,\omega - K_i \int q_{e,v}\,dt, \quad |\tau_i| \le 0.003\ \mathrm{N\,m} \]</div>
+        <p>Glossary terms become links with a definition tooltip: the <dfn data-term="lqr">LQR</dfn> weighs state error against effort, and the <dfn data-term="quaternion">quaternion</dfn> avoids gimbal lock.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ files -->
+    <section class="k-section" id="k-files" aria-labelledby="k-files-h">
+      <h2 id="k-files-h">Files, links and status</h2>
+      <div class="k-row" id="demo-files"></div>
+      <p class="status-line" id="demo-file-status"></p>
+      <aside class="sim-links" aria-labelledby="demo-sim-h">
+        <h2 id="demo-sim-h">Try it in the simulator</h2>
+        <ul id="demo-simlinks"></ul>
+      </aside>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>ADCS.ui.download('run.csv', ADCS.ui.toCSV(result, { decimate: 10 }));
+ADCS.ui.copyText(location.href).then(function (ok) { … });
+ADCS.ui.announce('Run complete');                       // shared polite live region
+ADCS.ui.simLink('T03 safe-mode upset', 'preset=T03');   // or { preset: 'T03', gap: 1 }
+ADCS.ui.fmt(-0.01234, { sig: 3, unit: 'deg/s' });       // "−0.0123 deg/s"
+ADCS.ui.storage.get('adcs-read', []);                   // never throws</code></pre></div></details>
+    </section>
+  </div>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

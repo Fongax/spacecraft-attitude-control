@@ -1,0 +1,260 @@
+/*
+ * tokens.css: design tokens for "Attitude Control: The Big Picture".
+ *
+ * Light values sit on :root. Dark values are applied twice, identically:
+ *   1. under prefers-color-scheme: dark, unless the reader chose light (html[data-theme="light"]);
+ *   2. when the reader chose dark (html[data-theme="dark"]).
+ * Every text/background pair used by the components meets WCAG AA
+ * (4.5:1 for body text, 3:1 for large text, UI boundaries and plot marks).
+ * Discipline colours (--d-*) are used only for dots and borders, never behind text.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces and text */
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --surface-3D: #dfe5ee;
+  --bg-3d: #e9eef5;
+  --text: #14181f;
+  --text-2: #4a5361;
+  --border: #d3d9e2;
+  --border-strong: #6f7a89;
+  --grid: #e4e8ee;
+  --zebra: rgba(20, 24, 31, 0.035);
+  --accent: #1f5fbf;
+  --accent-contrast: #ffffff;
+  --accent-soft: #e6eefa;
+  --focus: #1f5fbf;
+
+  /* Status */
+  --ok: #1a7f37;
+  --warn: #9a6700;
+  --bad: #c62828;
+  --ok-bg: #edf7f0;
+  --warn-bg: #fdf6e6;
+  --bad-bg: #fcebeb;
+  --info-bg: #e8f0fb;
+  --ext: #6a3fb5;
+  --ext-bg: #f2edfb;
+  --ext-stripe: rgba(106, 63, 181, 0.08);
+
+  /* Modes (filled pills carry --mode-contrast text) */
+  --mode-n: #2e7d32;
+  --mode-sd: #c62828;
+  --mode-sh: #a15c00;
+  --mode-contrast: #ffffff;
+
+  /* Plot and 3D */
+  --axis-x: #c8384b;
+  --axis-y: #1f8a7a;
+  --axis-z: #2f63a3;
+  --line-req: #c62828;
+  --line-thr: #9a6700;
+  --band-ok: rgba(26, 127, 55, 0.10);
+  --band-fault: rgba(198, 40, 40, 0.12);
+  --panel: #2b4c7e;
+  --seq-lo: #2f63a3;
+  --seq-hi: #c62828;
+  --plot-bg: #ffffff;
+
+  /* Disciplines (dots and borders only) */
+  --d-me: #b5561d;
+  --d-math: #6a3fb5;
+  --d-phys: #0f7b8a;
+  --d-cs: #1f5fbf;
+  --d-sw: #2e7d32;
+  --d-ai: #a3337a;
+  --d-av: #8a6d00;
+  --d-mhf: #5a6472;
+
+  /* Honesty tags: text colour on tinted background */
+  --tag-project-fg: #1d58b0;
+  --tag-project-bg: #e6eefa;
+  --tag-derived-fg: #0c6672;
+  --tag-derived-bg: #e1f2f4;
+  --tag-site-fg: #454e5b;
+  --tag-site-bg: #eceff3;
+  --tag-illustrative-fg: #7f5400;
+  --tag-illustrative-bg: #faf0db;
+  --tag-extension-fg: #5f37a5;
+  --tag-extension-bg: #f0eafa;
+  --tag-analogy-fg: #932c6b;
+  --tag-analogy-bg: #f9e7f1;
+  --tag-typical-fg: #4b5a1f;
+  --tag-typical-bg: #edf1df;
+
+  /* Typography */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-md: 1.125rem;
+  --fs-lg: 1.375rem;
+  --fs-xl: 1.75rem;
+  --fs-xxl: 2.25rem;
+  --lh: 1.6;
+
+  /* Spacing, radius, shadow */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+  --r1: 6px;
+  --r2: 10px;
+  --r3: 16px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.10), 0 12px 32px rgba(0, 0, 0, 0.14);
+
+  /* Layout */
+  --container: 1200px;
+  --gutter: 16px;
+  --header-h: 60px;
+  --hit: 40px;
+  --scroll-bg: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #1f2630;
+    --surface-3D: #2a3240;
+    --bg-3d: #0b0f14;
+    --text: #e6edf3;
+    --text-2: #9aa7b4;
+    --border: #30363d;
+    --border-strong: #7d8794;
+    --grid: #262d36;
+    --zebra: rgba(230, 237, 243, 0.04);
+    --accent: #6ea8fe;
+    --accent-contrast: #0d1117;
+    --accent-soft: #172a45;
+    --focus: #6ea8fe;
+    --ok: #3fb950;
+    --warn: #d29922;
+    --bad: #f85149;
+    --ok-bg: #102619;
+    --warn-bg: #2a2110;
+    --bad-bg: #2e1517;
+    --info-bg: #13233a;
+    --ext: #b392f0;
+    --ext-bg: #221a35;
+    --ext-stripe: rgba(179, 146, 240, 0.10);
+    --mode-n: #3fb950;
+    --mode-sd: #f85149;
+    --mode-sh: #d29922;
+    --mode-contrast: #0d1117;
+    --axis-x: #ff7b8a;
+    --axis-y: #4fd1c5;
+    --axis-z: #79a8ff;
+    --line-req: #f85149;
+    --line-thr: #d29922;
+    --band-ok: rgba(63, 185, 80, 0.14);
+    --band-fault: rgba(248, 81, 73, 0.16);
+    --panel: #3d6bb3;
+    --seq-lo: #79a8ff;
+    --seq-hi: #ff7b8a;
+    --plot-bg: #161b22;
+    --d-me: #f0883e;
+    --d-math: #b392f0;
+    --d-phys: #39c5cf;
+    --d-cs: #6ea8fe;
+    --d-sw: #56d364;
+    --d-ai: #f778ba;
+    --d-av: #e3b341;
+    --d-mhf: #9aa7b4;
+    --tag-project-fg: #8ab9ff;
+    --tag-project-bg: #15243b;
+    --tag-derived-fg: #5ccfd8;
+    --tag-derived-bg: #0f272b;
+    --tag-site-fg: #b3bec9;
+    --tag-site-bg: #232a34;
+    --tag-illustrative-fg: #e3b341;
+    --tag-illustrative-bg: #2a2211;
+    --tag-extension-fg: #c3a8f6;
+    --tag-extension-bg: #231a37;
+    --tag-analogy-fg: #f59acb;
+    --tag-analogy-bg: #321626;
+    --tag-typical-fg: #b9cc7d;
+    --tag-typical-bg: #212812;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.40), 0 4px 12px rgba(0, 0, 0, 0.30);
+    --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.50), 0 12px 32px rgba(0, 0, 0, 0.50);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-2: #1f2630;
+  --surface-3D: #2a3240;
+  --bg-3d: #0b0f14;
+  --text: #e6edf3;
+  --text-2: #9aa7b4;
+  --border: #30363d;
+  --border-strong: #7d8794;
+  --grid: #262d36;
+  --zebra: rgba(230, 237, 243, 0.04);
+  --accent: #6ea8fe;
+  --accent-contrast: #0d1117;
+  --accent-soft: #172a45;
+  --focus: #6ea8fe;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --bad: #f85149;
+  --ok-bg: #102619;
+  --warn-bg: #2a2110;
+  --bad-bg: #2e1517;
+  --info-bg: #13233a;
+  --ext: #b392f0;
+  --ext-bg: #221a35;
+  --ext-stripe: rgba(179, 146, 240, 0.10);
+  --mode-n: #3fb950;
+  --mode-sd: #f85149;
+  --mode-sh: #d29922;
+  --mode-contrast: #0d1117;
+  --axis-x: #ff7b8a;
+  --axis-y: #4fd1c5;
+  --axis-z: #79a8ff;
+  --line-req: #f85149;
+  --line-thr: #d29922;
+  --band-ok: rgba(63, 185, 80, 0.14);
+  --band-fault: rgba(248, 81, 73, 0.16);
+  --panel: #3d6bb3;
+  --seq-lo: #79a8ff;
+  --seq-hi: #ff7b8a;
+  --plot-bg: #161b22;
+  --d-me: #f0883e;
+  --d-math: #b392f0;
+  --d-phys: #39c5cf;
+  --d-cs: #6ea8fe;
+  --d-sw: #56d364;
+  --d-ai: #f778ba;
+  --d-av: #e3b341;
+  --d-mhf: #9aa7b4;
+  --tag-project-fg: #8ab9ff;
+  --tag-project-bg: #15243b;
+  --tag-derived-fg: #5ccfd8;
+  --tag-derived-bg: #0f272b;
+  --tag-site-fg: #b3bec9;
+  --tag-site-bg: #232a34;
+  --tag-illustrative-fg: #e3b341;
+  --tag-illustrative-bg: #2a2211;
+  --tag-extension-fg: #c3a8f6;
+  --tag-extension-bg: #231a37;
+  --tag-analogy-fg: #f59acb;
+  --tag-analogy-bg: #321626;
+  --tag-typical-fg: #b9cc7d;
+  --tag-typical-bg: #212812;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.40), 0 4px 12px rgba(0, 0, 0, 0.30);
+  --shadow-pop: 0 2px 6px rgba(0, 0, 0, 0.50), 0 12px 32px rgba(0, 0, 0, 0.50);
+}

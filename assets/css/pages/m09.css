@@ -1,0 +1,80 @@
+/*
+ * m09.css: Module 09, verification and Monte Carlo statistics (package P5).
+ * Everything is scoped under body[data-page="m09"]; shared components keep their own styles.
+ */
+
+/* LOCAL (request P0): .scroll-x { position: relative; } so absolutely positioned children
+   (KaTeX's hidden MathML, visually hidden text) are clipped by the scroll box. */
+body[data-page="m09"] .scroll-x { position: relative; }
+
+body[data-page="m09"] .in-short {
+  max-width: 72ch;
+  margin-block: var(--s6) var(--s4);
+  padding-inline-start: var(--s3);
+  border-inline-start: 3px solid var(--accent);
+}
+
+/* long API names in widget notes wrap instead of widening the page */
+body[data-page="m09"] .widget-foot code, body[data-page="m09"] .prose code { overflow-wrap: anywhere; }
+
+body[data-page="m09"] .m09-metrics-table { margin-block: var(--s4) var(--s5); }
+body[data-page="m09"] .m09-note { font-size: var(--fs-sm); color: var(--text-2); max-width: 72ch; }
+body[data-page="m09"] .m09-evidence th[scope="row"] { font-weight: 600; min-width: 14rem; }
+body[data-page="m09"] .m09-evidence td { min-width: 11rem; vertical-align: top; }
+
+/* widget outputs */
+body[data-page="m09"] .widget-output > .plot,
+body[data-page="m09"] .widget-output > .grid-2 { margin-block-end: var(--s4); }
+body[data-page="m09"] .widget-output > .scroll-x { margin-block-end: var(--s3); }
+body[data-page="m09"] .m09-progress { margin-block-end: var(--s3); }
+body[data-page="m09"] .m09-progress .status-line { margin-block-start: var(--s1); color: var(--text); }
+
+/* W9.1 test matrix */
+body[data-page="m09"] .m09-matrix { min-width: 52rem; }
+body[data-page="m09"] .m09-matrix td, body[data-page="m09"] .m09-matrix th { vertical-align: top; }
+body[data-page="m09"] .m09-reqs { display: flex; flex-wrap: wrap; gap: var(--s1); }
+body[data-page="m09"] .m09-req {
+  display: inline-block; padding: 0.05em 0.5em; border: 1px solid var(--border-strong); border-radius: 999px;
+  font-family: var(--font-mono); font-size: var(--fs-xs); white-space: nowrap; background: var(--surface);
+}
+body[data-page="m09"] .m09-result { min-width: 13rem; }
+body[data-page="m09"] .m09-matrix th[scope="row"] { white-space: nowrap; }
+body[data-page="m09"] .m09-test-id { display: block; margin-block-end: var(--s1); }
+body[data-page="m09"] .m09-result .badge { margin-inline-end: var(--s1); }
+body[data-page="m09"] .m09-val { display: block; margin-block-start: var(--s1); font-family: var(--font-mono); font-size: var(--fs-xs); }
+body[data-page="m09"] .m09-trace { margin-block-start: var(--s3); }
+body[data-page="m09"] .m09-trace-tests { display: flex; flex-wrap: wrap; gap: var(--s2); }
+/* keep trace rows compact at phone width: the table scrolls sideways instead of squeezing the verbatim text */
+body[data-page="m09"] .m09-trace th[scope="row"] { white-space: nowrap; }
+body[data-page="m09"] .m09-trace td:last-child { min-width: 16rem; }
+body[data-page="m09"] .m09-trace .m09-trace-tests { flex-wrap: nowrap; }
+body[data-page="m09"] .m09-trace-test { display: inline-flex; align-items: center; gap: var(--s1); font-family: var(--font-mono); font-size: var(--fs-xs); white-space: nowrap; }
+
+/* W9.2 mini Monte Carlo */
+body[data-page="m09"] .m09-seed { width: 9em; }
+body[data-page="m09"] .m09-stats { margin-block-end: var(--s4); }
+body[data-page="m09"] .m09-metric { margin-block-end: var(--s2); }
+body[data-page="m09"] .m09-hist-note { margin-block: calc(-1 * var(--s2)) var(--s4); }
+/* key for the unlabelled 6 deg/s line under the scatter: a short dashed swatch in the line's colour */
+body[data-page="m09"] .m09-scatter-key { margin-block: calc(-1 * var(--s2)) var(--s4); }
+body[data-page="m09"] .m09-key-line {
+  display: inline-block; width: 1.75em; margin-inline-end: var(--s2); vertical-align: middle;
+  border-top: 2px dashed var(--line-thr);
+}
+body[data-page="m09"] .m09-pick { margin-block: var(--s2) var(--s4); padding: var(--s3) var(--s4); border: 1px solid var(--border); border-radius: var(--r2); }
+body[data-page="m09"] .m09-pick h4 { margin: 0 0 var(--s2); font-size: var(--fs-base); }
+body[data-page="m09"] .m09-pick p { margin: var(--s2) 0 0; }
+body[data-page="m09"] .m09-pick-badges { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+/* W9.3 */
+body[data-page="m09"] .m09-verdict { margin: 0 0 var(--s3); }
+body[data-page="m09"] .m09-verdict .badge { margin-inline-end: var(--s1); vertical-align: middle; }
+body[data-page="m09"] .m09-sub { margin: var(--s5) 0 var(--s3); padding-block-start: var(--s4); border-top: 1px solid var(--border); font-size: var(--fs-base); }
+body[data-page="m09"] .m09-luck { color: var(--text); margin-block-end: var(--s3); }
+
+/* W9.5 */
+body[data-page="m09"] .m09-gap { color: var(--text); }
+
+/* action rows with two buttons take the whole controls row so the buttons sit side by side */
+body[data-page="m09"] .m09-actions { grid-column: 1 / -1; }
+body[data-page="m09"] .m09-actions .btn-row { flex-wrap: wrap; }

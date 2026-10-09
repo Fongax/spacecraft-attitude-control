@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subjects atlas · Attitude Control: The Big Picture</title>
+<meta name="description" content="Every studied subject, grouped into eight disciplines and linked to the thirteen parts of a student spacecraft attitude-control project: cards, a subject-by-part matrix and a discipline heat table, with search and filters.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/atlas.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/pages/atlas.js"></script>
+</head>
+<body data-page="atlas">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container">
+    <h1>Subjects atlas</h1>
+    <p class="lede">Every subject studied, grouped into eight disciplines, and the parts of the attitude-control project it feeds. Use it to see the big picture: which ideas from which subjects hold up which part of the spacecraft.</p>
+    <p class="atlas-stats" id="atlas-stats"></p>
+
+    <section id="how" class="atlas-section" aria-labelledby="how-title">
+      <h2 id="how-title">How to read the atlas</h2>
+      <div class="grid-2 atlas-how">
+        <div class="prose">
+          <p>A <strong>link</strong> joins one subject to one of the thirteen project parts (the modules on the <a href="learn.html">learning path</a>). Each link carries three things:</p>
+          <ul class="atlas-how-list">
+            <li><strong>A strength.</strong> <span class="atlas-glyph strong" aria-hidden="true"></span> Strong: the part depends on an idea or method from the subject. <span class="atlas-glyph moderate" aria-hidden="true"></span> Moderate: a supporting idea. <span class="atlas-glyph weak" aria-hidden="true"></span> Weak: a useful but minor connection.</li>
+            <li><strong>A tag.</strong> Most links are direct. <span class="tag tag-analogy" title="Analogy: a teaching bridge rather than course content.">Analogy</span> marks a teaching bridge from another field; <span class="tag tag-extension" title="Extension: beyond the original project scope.">Extension</span> marks a link to work beyond the original project, such as the sensors and estimation module.</li>
+            <li><strong>A concept:</strong> one sentence saying exactly which idea crosses over.</li>
+          </ul>
+          <p>Each subject also shows its <strong>evidence</strong>. <span class="ev ev-notes" title="Supported by the subject’s notes.">Notes</span> means its own notes support the links. <span class="ev ev-outline" title="Typical content of this subject, inferred from its outline, not from notes.">Typical content</span> means only the subject outline is available, so the listed topics are the standard syllabus for a subject of that name, not a record of what was taught. <span class="ev ev-partial" title="Partly supported by notes; the rest is typical content.">Partial notes</span> sits in between. The full key is on the <a href="about.html#labels">About page</a>.</p>
+        </div>
+        <div class="prose">
+          <p>In the <strong>Disciplines</strong> view the heat table counts subjects per cell. The “strongest on” line under each discipline instead ranks parts by a weighted score, which sums the links of a discipline \(d\) into each project part \(m\) with a weight per strength:</p>
+          <div class="eq">\[ S_{d,m} \;=\; \sum_{c\,\in\,d} w(c,m) \]</div>
+          <p class="eq-note">where the weight of one link from subject \(c\) to part \(m\) is</p>
+          <div class="eq">\[ w(c,m) = \begin{cases} 3 & \text{strong} \\ 2 & \text{moderate} \\ 1 & \text{weak} \\ 0 & \text{no link} \end{cases} \]</div>
+          <p class="eq-note">The weights are a choice made for this site <span class="tag tag-site" title="Site default: a value chosen for this site because the notes do not give one.">Site default</span>. A discipline is “strongest on” the three parts with the highest \(S_{d,m}\), with ties kept, listed from the highest score down.</p>
+          <p id="atlas-worked" class="atlas-worked"></p>
+        </div>
+      </div>
+      <div class="atlas-glance" id="atlas-glance"></div>
+    </section>
+
+    <section id="explore" class="atlas-section" aria-labelledby="explore-title">
+      <h2 id="explore-title">Explore the subjects</h2>
+      <p class="atlas-try" id="atlas-try"></p>
+      <div class="card atlas-controls" id="atlas-controls" role="search" aria-label="Filter subjects"></div>
+      <div class="atlas-status-row">
+        <p class="status-line" id="atlas-status" role="status" aria-live="polite" aria-atomic="true"></p>
+      </div>
+      <div class="atlas-empty" id="atlas-empty" hidden>
+        <p><strong>No subjects match.</strong> <button type="button" class="link" id="atlas-empty-clear">Clear filters</button></p>
+      </div>
+      <div id="atlas-views">
+        <noscript><p>The atlas is built from the site’s data and needs JavaScript. Every module page lists its own subjects under “Where this came from”; start from the <a href="learn.html">learning path</a>.</p></noscript>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13 Operations, human factors and safety culture · Attitude Control: The Big Picture</title>
+<meta name="description" content="Operate the spacecraft safely: layered defences, automation levels, the ground link, resets, alarms, learning controllers and the legal context.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m13.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m13.js"></script>
+</head>
+<body data-page="m13">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 13</span>
+      <h1>Operations, human factors and safety culture</h1>
+      <p class="module-purpose">The spacecraft after launch: how its defences stack up, who decides when it leaves safe mode, how a command crosses the gap to orbit, how the mode survives a reset, when an alarm deserves attention, and the people, laws and habits that keep it all honest.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Run</span>
+        <span>About 25 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ layers -->
+    <section id="layers" aria-labelledby="layers-title">
+      <h2 id="layers-title">Layers of defence</h2>
+      <div class="prose">
+        <p>No single safeguard in the project is perfect, and none has to be. The <dfn data-term="swiss-cheese">Swiss-cheese model</dfn> pictures each safeguard as a slice with holes; an accident needs the holes in every slice to line up at once. The model, with its distinction between latent conditions and active failures, is typical content of a human-factors-for-pilots subject, and the same idea under the name <em>defence in depth</em> is typical content of a security-standards subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The project's slices are easy to name <span class="tag tag-project">Project</span>:</p>
+        <ol>
+          <li><strong>The controller and its saturation</strong>: the shortest-rotation error and a torque command clipped to ±3 mN m (REQ-S2) in every simulation;</li>
+          <li><strong>Rate-limit checks</strong>: the 15 deg/s ceiling of REQ-S1, checked in every log;</li>
+          <li><strong>Hysteresis and dwell</strong>: enter at 6 deg/s, leave only after 2 s below 0.5 deg/s, wait 8 s before NOMINAL;</li>
+          <li><strong>Forbidden transitions</strong>: no SAFE_DETUMBLE → NOMINAL, no NOMINAL → SAFE_HOLD, no return while the fault is active;</li>
+          <li><strong>Monte Carlo verification</strong>: 60 seeded trials instead of one clean plot;</li>
+          <li><strong>The risk register</strong>: the stored fallback gain and the fixed seed with CSV outputs.</li>
+        </ol>
+        <p>If the layers fail independently, the chance that a hazard gets through all of them is the product of their hole probabilities:</p>
+        <div class="eq">\[ P(\text{through})=\prod_{i}p_i:\qquad p_1=p_2=p_3=0.1\ \Rightarrow\ P=10^{-3} \]</div>
+        <p class="eq-note">The hole probabilities are <span class="tag tag-illustrative">Illustrative</span>.</p>
+        <p>The word that matters is <em>independently</em>. Two slices that share a cause, such as two checks reading the same faulty sensor, have holes in the same place, and the product overstates the protection. The widget shows the other weakness: a hazard that only one slice can stop is one hole away from getting through.</p>
+      </div>
+
+      <figure class="widget" id="w-swiss" aria-labelledby="w-swiss-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-swiss-title">Swiss-cheese stack</h3>
+          <p class="widget-try"><strong>Try:</strong> switch off the risk register, then switch it back on and switch off hysteresis and dwell; finally switch off both saturation and Monte Carlo verification. <strong>Notice:</strong> one slice protects two hazards on its own, and excessive gain only gets through when all three of its slices are gone.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>A deterministic table of which slices stop which scripted hazard; nothing here is random. The rate-limit check is counted as a stopper for excessive gain because a gain that drives the rate up is what that check catches.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-illustrative">Illustrative</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ automation -->
+    <section id="automation" aria-labelledby="automation-title">
+      <h2 id="automation-title">Levels of automation</h2>
+      <div class="prose">
+        <p>The project's safe mode acts on its own: it enters, detumbles, holds and returns to NOMINAL without asking anyone <span class="tag tag-project">Project</span>. Entry has to be automatic, because a tumbling spacecraft cannot wait for the next ground contact. The return is a genuine choice. Should SAFE_HOLD → NOMINAL happen automatically when the guards are met, or wait for a person on the ground to approve it?</p>
+        <p><dfn data-term="levels-of-automation">Levels of automation</dfn>, from "the human does everything" to "the computer acts and ignores the human", together with trust, complacency and out-of-the-loop performance, are typical content of an aviation human-factors subject <span class="tag tag-typical">Typical content</span>. Flying has a ready-made analogy: the on-board safe mode is a <em>memory item</em>, done at once and from memory, while the ground team works through the slower diagnostic <em>checklist</em>; checklists and memory items are typical content of a flight-procedures subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The price of asking the ground is waiting for contact. With a 10 min contact every 95 min orbit <span class="tag tag-illustrative">Illustrative</span>, a return that becomes possible at a random moment outside a contact waits on average half the 85 min gap:</p>
+        <div class="eq">\[ \bar t_{wait}=\frac{T_{gap}}{2}=\frac{95-10}{2}\ \text{min}\approx42\ \text{min},\qquad \text{averaged over the whole orbit: }\ \frac{85}{95}\cdot42.5\approx38\ \text{min} \]</div>
+        <p>The benefit is a second opinion: a person who can see that the fault flag cleared for the wrong reason can refuse an <em>inappropriate return</em>. The trade is recovery time against the risk of going back to NOMINAL too soon, and there is no free answer, only a choice made deliberately.</p>
+      </div>
+
+      <figure class="widget" id="w-automation" aria-labelledby="w-automation-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-automation-title">Automation level</h3>
+          <p class="widget-try"><strong>Try:</strong> move from level 4 (the project) down to level 1, then lengthen the contact or shorten the orbit period. <strong>Notice:</strong> each step down adds waiting for the ground (at level 2, about 42 min of extra SAFE_HOLD per return that falls outside a contact), while the risk of an inappropriate return falls; at level 1 even the entry waits, which is unsafe.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>The mode timeline is preset T03 through the full engine. The contact model and the qualitative risk ratings are illustrative.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ annunciation -->
+    <section id="annunciation" aria-labelledby="annunciation-title">
+      <h2 id="annunciation-title">Mode awareness for operators</h2>
+      <div class="prose">
+        <p>An operator on the ground has the same problem as the reader of a plot: they must know which mode the spacecraft is in, why it changed and what it is waiting for. <a href="m11-visualisation.html#annunciation">Module 11</a> showed the display rules and tested them on you. For operations, three points add to them.</p>
+        <ul>
+          <li><strong>Send the reason, not just the mode.</strong> A mode-change telemetry record should carry the guard that fired and its value ("entered SAFE_DETUMBLE: |ω| = 7.2 deg/s" <span class="tag tag-illustrative">Illustrative</span>), so a person seeing it hours later after the next contact can reconstruct the story.</li>
+          <li><strong>Show what the next transition needs.</strong> The four return guards, with the dwell remaining, tell an operator whether waiting is enough or something is stuck.</li>
+          <li><strong>Know how each monitor fails.</strong> The AI Methodologies notes make the distinction sharply: rule-based monitors fail <em>silently</em> on situations their rules did not anticipate, while learned monitors fail <em>confidently</em>, giving a firm answer that is wrong. Operators must know which kind each alarm comes from.</li>
+        </ul>
+        <p>Mode confusion, the gap between the real mode and the operator's mental model, is typical content of a human-factors-for-pilots subject <span class="tag tag-typical">Typical content</span>, and so is situational awareness in three levels: perceiving the mode, understanding why, and projecting what comes next. A good mode display serves all three.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ ground-link -->
+    <section id="ground-link" aria-labelledby="ground-link-title">
+      <h2 id="ground-link-title">Commanding across the gap</h2>
+      <div class="prose">
+        <p>Every command to the spacecraft crosses a link with a long delay. The Networking notes give the quantity that decides how a link protocol behaves, the <dfn data-term="bdp">bandwidth-delay product</dfn>: the number of bits "in flight" when the link is full.</p>
+        <div class="eq">\[ \mathrm{BDP}=R\cdot\mathrm{RTT}:\qquad 50\ \text{Mb/s}\times0.6\ \text{s}=30\ \text{Mb}=3.75\ \text{MB}\ \ (\text{GEO}) \]</div>
+        <p class="eq-note">The 50 Mb/s link rate and the 0.6 s geostationary round trip are example values <span class="tag tag-illustrative">Illustrative</span>.</p>
+        <p>A sender that waits for each acknowledgement before sending the next frame (<em>stop-and-wait</em>) uses only a tiny fraction of such a link. A <em>sliding window</em> keeps several frames in flight; when a frame is lost, <em>Go-Back-N</em> resends everything after it, and the notes measured 1% loss wasting 73.8% of transmissions; <em>selective repeat</em> resends only the lost frame. For a frame of transmission time \(T_f\), window \(W\) and loss probability \(p\):</p>
+        <div class="eq">\[ U_{SW}=\frac{(1-p)\,T_f}{T_f+\mathrm{RTT}},\qquad U_{SR}=(1-p)\min\!\Big(1,\ \frac{W\,T_f}{T_f+\mathrm{RTT}}\Big) \]</div>
+        <p>Small things add up too. The notes measured 199 bytes of headers carrying a 1-byte payload, so housekeeping should be batched into frames rather than sent one value per packet. A telemetry sample of the attitude state is small: \(q\) as 4 floats, \(\omega\) as 3, \(\tau\) as 3 and a mode byte make 41 bytes <span class="tag tag-derived">Derived</span>.</p>
+        <p>Integrity matters more than speed for commands. Telecommand frames carry a 16-bit CRC (for example the CCITT polynomial \(x^{16}+x^{12}+x^{5}+1\)); framing, error detection and CRCs are typical content of a computer and network architecture subject <span class="tag tag-typical">Typical content</span>. A corrupted "exit safe mode" command must be <em>discarded</em>, never executed. Authentication goes further, but it is not enough on its own: even an authenticated "return to NOMINAL" must not bypass the SAFE_HOLD guards, because the on-board logic should enforce them whoever sends the command. Authenticated telecommands and the incident-response lifecycle are typical content of a security-standards subject <span class="tag tag-typical">Typical content</span>. How quickly operators even learn that the spacecraft entered safe mode is decided by the ground segment and its contact windows, the space counterpart of the communications, navigation and surveillance (CNS) planning that is typical content of an airspace and air-traffic-management subject <span class="tag tag-typical">Typical content</span> <span class="tag tag-analogy">Analogy</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-gap" aria-labelledby="w-gap-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-gap-title">Commanding across the gap</h3>
+          <p class="widget-try"><strong>Try:</strong> switch from LEO to GEO and lunar distance at window 1, then raise the window, then raise the loss rate to 5%. <strong>Notice:</strong> stop-and-wait collapses as the round trip grows; a window as large as the pipe fixes it; under loss, Go-Back-N wastes far more than selective repeat.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Closed-form steady-state models with 1024-byte frames and independent frame losses; round-trip times and link rates are illustrative.</p>
+          <span class="tags"><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ persistence -->
+    <section id="persistence" aria-labelledby="persistence-title">
+      <h2 id="persistence-title">Surviving resets</h2>
+      <div class="prose">
+        <p>Flight computers reset: a watchdog fires, a radiation upset flips a bit, the power dips. What mode should the software boot into? If it always boots into NOMINAL, a reset during SAFE_DETUMBLE quietly performs SAFE_DETUMBLE → NOMINAL, a <dfn data-term="forbidden-transition">forbidden transition</dfn> through the back door. A reset in SAFE_HOLD while the fault is still active returns to NOMINAL with the fault active, which is also forbidden.</p>
+        <p>The cure comes from databases. The Database Infrastructure and OS Internals notes describe the <dfn data-term="write-ahead-log">write-ahead log</dfn>: make the log record durable <em>before</em> changing the data, so every crash point has a defined outcome: either nothing happened, or the log is replayed. For the mode machine:</p>
+        <div class="eq">\[ \text{log}\big(\text{mode},\ \text{counters},\ \textstyle\int e\big)\ \text{made durable}\ \ \Longrightarrow\ \ \text{then act};\qquad \text{on boot: state}=\text{replay(log)} \]</div>
+        <p>The same notes supply the rest of the toolkit. A new gain table must be uploaded <em>atomically</em>: write the complete, checksummed table into a spare buffer, validate its ranges, then swap one pointer, so the controller never runs with a new \(K_p\) and an old \(K_d\). Writes to flash should be batched (commit batching gave 547.8 times the throughput with no loss of durability). And durability has to be tested with real power cycles, because killing a process proves nothing: in the notes, every setting survived a process kill, including the unsafe one.</p>
+      </div>
+
+      <figure class="widget" id="w-reboot" aria-labelledby="w-reboot-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-reboot-title">Reboot into the right mode</h3>
+          <p class="widget-try"><strong>Try:</strong> reset at 2 s (inside SAFE_DETUMBLE) with the log off, then switch the log on; try 55 s (SAFE_HOLD with the fault active) and 20 s. <strong>Notice:</strong> without the log the trace checker flags a forbidden transition at the reset; with it, the run continues as if the reset never happened.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Preset T03 run to the reset time, then a second <code>ADCS.sim.run</code> from that state with the fault window shifted; the two logs are joined and checked with <code>ADCS.modes.checkTrace</code>.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-extension">Extension</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ monitoring -->
+    <section id="monitoring" aria-labelledby="monitoring-title">
+      <h2 id="monitoring-title">Alarms</h2>
+      <div class="prose">
+        <p>Every alarm is a classifier: it says "fault" or "no fault", and it can be wrong both ways. The Supervised Learning and Model Evaluation notes give the two numbers that matter, and a warning: real faults are rare, so accuracy is meaningless (a detector that never fires can be 99.4% accurate).</p>
+        <div class="eq">\[ \text{precision}=\frac{TP}{TP+FP},\qquad \text{recall}=\frac{TP}{TP+FN},\qquad \text{precision}=\frac{r\,b}{r\,b+f\,(1-b)} \]</div>
+        <p class="eq-note">\(b\) is the base rate of real faults, \(r\) the recall and \(f\) the false-alarm rate per check.</p>
+        <p>The same definitions put alarm fatigue in numbers: a detector with 80% recall and 5% precision generates 20 investigations for every real fault it catches <span class="tag tag-illustrative">Illustrative</span>, and people stop investigating long before the twentieth. Precision and recall are set by the threshold, not the model, so the threshold is an operational decision. Two habits help. <strong>Persistence</strong> filters single-sample spikes, exactly as the project's "fault active for at least 0.5 s" does <span class="tag tag-project">Project</span>; outlier detection on data streams appears in the Data Mining notes, which make telemetry anomaly detection with persistence a natural fit. <strong>Calibrated probabilities</strong> let operators triage by expected risk: the notes found logistic regression well calibrated by construction, while Naive Bayes double-counts correlated channels such as wheel speed, current and temperature. Shallow decision trees give readable operator rules.</p>
+        <p>Assistants need limits too. The Deep Learning and Generative AI notes found exact-term retrieval beating dense retrieval at rank 1, which suits queries such as "REQ-L1" or "SAFE_HOLD dwell", and stress that retrieval-based assistants should <em>advise</em>, never command. Upsets have outside causes as well: space weather, which raises atmospheric drag and causes single-event upsets, is the spacecraft's version of the weather studied in an aviation meteorology subject, where go/no-go discipline from weather case studies is typical content <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-alarms" aria-labelledby="w-alarms-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-alarms-title">Alarm fatigue</h3>
+          <p class="widget-try"><strong>Try:</strong> set recall to 80% and move the false-alarm rate until precision reads 5%, then make faults rarer. <strong>Notice:</strong> at 5% precision there are 20 alarms per fault caught, and the same detector gets worse as the base rate falls even though nothing about it changed.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Exact Bayes-rule arithmetic per check; the base rates and detector settings are illustrative.</p>
+          <span class="tags"><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ learning -->
+    <section id="learning" aria-labelledby="learning-title">
+      <h2 id="learning-title">Learning controllers and shields</h2>
+      <div class="prose">
+        <p>Could the controller learn instead of being designed? The Unsupervised and Reinforcement Learning notes contrast two ways of learning from trial and error. <em>Q-learning</em> is off-policy: it learns the value of the greedy action while behaving otherwise. <em>SARSA</em> is on-policy: its values include the cost of its own exploration.</p>
+        <div class="eq">\[ \text{Q-learning: }\ Q\leftarrow Q+\alpha\big[r+\gamma\max_{a'}Q(s',a')-Q\big],\qquad \text{SARSA: }\ Q\leftarrow Q+\alpha\big[r+\gamma\,Q(s',a')-Q\big] \]</div>
+        <p>On the notes' cliff-walk, Q-learning found the optimal path along the cliff edge but collected −49.1 per episode while learning; SARSA chose a safer, longer path and collected −29.1. For a spacecraft the 15 deg/s limit of REQ-S1 is the cliff. Exploring in the project's simulator is free; exploring on orbit is not, because "mistakes while learning are real", as the Intelligent Systems notes put it.</p>
+        <p>The project already contains the standard answer: a <em>shield</em>. The safe-mode machine overrides any controller, learned or designed, whenever its guards fire:</p>
+        <div class="eq">\[ \tau=\begin{cases}\pi_{\text{learned}}(x) & \text{in NOMINAL}\\ -K_d\,\omega & \text{in SAFE\_DETUMBLE (entered when }|\omega|>6\ \text{deg/s)}\\ \tau_{hold}(x) & \text{in SAFE\_HOLD}\end{cases} \]</div>
+        <p class="eq-note">\(\tau_{hold}=-K_p\,q_{e,v}-K_d\,\omega\) is the low-gain PD hold law of <a href="m08-safe-mode.html#modes">Module 8</a>; the learned policy only ever acts in NOMINAL.</p>
+        <p>Then there is the reward. The Intelligent Systems notes warn that an agent optimises the reward, not your intention, which makes reward design a design-review question: a learner scored only on settling time would happily slew as fast as the wheels allow, right up to or past the 15 deg/s limit, to settle sooner; limits such as REQ-S1 must be in the reward or enforced by the shield.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ context -->
+    <section id="context" aria-labelledby="context-title">
+      <h2 id="context-title">Mission context</h2>
+      <div class="prose">
+        <p>A spacecraft is also a legal object. International air law (the Chicago Convention, and strict versus fault-based liability) is typical content of an aviation law subject <span class="tag tag-typical">Typical content</span>; space law follows a similar treaty structure:</p>
+        <ul>
+          <li><strong>The Outer Space Treaty</strong> makes states responsible for the space activities of their nationals, including private operators.</li>
+          <li><strong>The Liability Convention</strong> imposes <em>absolute</em> liability for damage on the surface of the Earth or to aircraft in flight, and <em>fault-based</em> liability for damage to other objects in space.</li>
+          <li><strong>The Registration Convention</strong> requires space objects to be registered.</li>
+          <li><strong>Debris-mitigation guidelines</strong> limit how long a spacecraft may stay in orbit after its mission.</li>
+        </ul>
+        <p>These turn into top-level requirements. A spacecraft that cannot hold attitude may be unable to point its antenna, manoeuvre or deorbit, so recovering from safe mode (REQ-F1, REQ-L1) supports legal obligations as well as mission success. The wider picture, the shared orbit as a commons whose debris affects everyone, and coordination of radio spectrum and orbital slots through UN-based bodies, applies the UN system and international cooperation, typical content of an international relations subject <span class="tag tag-typical">Typical content</span>, to space; it is included here as context only. So is the history. The history of aviation is typical content of an introduction-to-aviation subject <span class="tag tag-typical">Typical content</span>, and the gyroscopic autopilot and inertial guidance moved along it from aircraft into spacecraft.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ culture -->
+    <section id="culture" aria-labelledby="culture-title">
+      <h2 id="culture-title">Safety culture</h2>
+      <div class="prose">
+        <p>The last layer of defence is people telling the truth. A <dfn data-term="just-culture">just culture</dfn> separates honest mistakes, which are reported and learned from, from reckless acts; reporting systems and safety management systems built on it are typical content of an aviation human-factors subject and of a safety-management subject <span class="tag tag-typical">Typical content</span>. Documented failures and fixes are safety data.</p>
+        <p>The project shows the habit in small ways. Its results summary includes an honest worst-case interpretation: the worst Monte Carlo cases occur when the initial attitude error is large and the rate excites more than one axis, and saturation is active early in them <span class="tag tag-project">Project</span>. Its log records the problem "report can become too theoretical" and the decision to "tie each result back to requirement IDs" <span class="tag tag-project">Project</span>. And its whole design philosophy is conservative: when in doubt, fail into a known, recoverable safe mode. Engineering ethics and safety thinking of this kind are typical content of an engineering design practice subject, and design reviews with documented rationale of a mechanical engineering design subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>Pilots have a matching reflex: in spatial disorientation, stabilise the rates first, then restore the attitude, the same order as SAFE_DETUMBLE then SAFE_HOLD; disorientation and recovery are typical content of an aviation-medicine subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>Two subjects with full notes add practical habits. The Design of Machine Elements notes describe failures that gave no warning, such as fatigue cracks in gears, and wind-turbine gearboxes where oil-condition monitoring cut repair costs about four-fold; the spacecraft equivalent is <strong>condition monitoring</strong>, trending wheel current and temperature to catch rising bearing friction before a wheel fails. The Electromechanics notes cover electrical safety for test benches (the hazard is the current through the body, and a residual-current device trips within about 30 ms) and the precautions for closed-loop tests that can oscillate: small steps, mechanical limits, gains raised in small increments and a hand on the disable switch. Hardware-in-the-loop tests of an attitude controller need all of them.</p>
+      </div>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <p class="in-short"><strong>In short:</strong> operating the spacecraft safely means layers that fail independently, a deliberate choice of who decides the return to NOMINAL, a ground link whose delay and losses are designed for, a mode that survives resets because it is logged before it is acted on, alarms tuned against fatigue, shields around anything that learns, and a culture that records failures honestly. The subjects below supplied those ideas.</p>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 Numerical integration · Attitude Control: The Big Picture</title>
+<meta name="description" content="Integrate the attitude equations with RK4, see why forward Euler inflates |q|, and avoid step-size and floating-point traps.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m04.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m04.js"></script>
+</head>
+<body data-page="m04">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 04</span>
+      <h1>Numerical integration</h1>
+      <p class="module-purpose">Advance the attitude state in time without letting the numbers drift: RK4, renormalisation, step size and floating point.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Model</span>
+        <span>About 25 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ ode -->
+    <section id="ode" aria-labelledby="ode-title">
+      <h2 id="ode-title">The state and its ODE</h2>
+      <div class="prose">
+        <p>A simulator never solves the equations of motion exactly. It advances the state in fixed steps of length \(h\), and every step replaces the true curve with an approximation. This module is about choosing that approximation so that its errors stay far below anything the requirements care about, and about the few places where the arithmetic itself can bite.</p>
+        <p>The project packed everything that changes with time into one state vector of 10 numbers <span class="tag tag-project">Project</span>: the attitude <dfn data-term="quaternion">quaternion</dfn> \(q\) (4 numbers, dimensionless), the body rate \(\omega\) (3, in rad/s) and the running integral of the attitude error used by the PID controller (3). Its time derivative depends only on the state and the torque:</p>
+        <div class="eq">\[ x=\begin{bmatrix} q\\ \omega \\ \int q_{e,v}\,dt\end{bmatrix},\qquad \dot x=f(x,\tau)=\begin{bmatrix}\tfrac12\,\Omega(\omega)\,q\\[3pt] J^{-1}\big(\tau+\tau_d-\omega\times J\omega\big)\\[3pt] q_{e,v}\end{bmatrix} \]</div>
+        <p>The first block is the quaternion kinematics and the second is <dfn data-term="euler-equation">Euler's equation</dfn> from <a href="m03-dynamics.html">module 03</a>, with \(J=\operatorname{diag}(0.035,\,0.040,\,0.025)\) kg m² <span class="tag tag-project">Project</span>, the control torque \(\tau\) and the disturbance \(\tau_d\) in N m. \(\Omega(\omega)\) is the 4 × 4 rate matrix:</p>
+        <div class="eq">\[ \Omega(\omega)=\begin{bmatrix}0&-\omega_x&-\omega_y&-\omega_z\\ \omega_x&0&\omega_z&-\omega_y\\ \omega_y&-\omega_z&0&\omega_x\\ \omega_z&\omega_y&-\omega_x&0\end{bmatrix} \]</div>
+        <p>Check the units row by row: \(\dot q\) is in 1/s because \(\omega\) is in rad/s, and \(\dot\omega\) is in rad/s² because N m divided by kg m² is 1/s². An equation whose rows do not balance like this is wrong before you run it.</p>
+        <p>Two modelling choices shape the rest of the module. First, the torque is held constant across each step (a <em>zero-order hold</em>), because the controller computes one new command per step of dt = 0.01 s <span class="tag tag-site">Site default</span>. Second, this site keeps the integral as a controller state that is updated once per step, the way flight code would hold it, instead of inside the integrated vector <span class="tag tag-site">Site default</span>. The difference in the results is negligible, and the integrator then works on a 7-number state \(x=[q,\ \omega]\).</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ euler-method -->
+    <section id="euler-method" aria-labelledby="euler-method-title">
+      <h2 id="euler-method-title">Forward Euler</h2>
+      <div class="prose">
+        <p>The simplest scheme, <dfn data-term="forward-euler">forward Euler</dfn>, follows the slope at the start of the step in a straight line:</p>
+        <div class="eq">\[ x_{n+1}=x_n+h\,f(x_n) \]</div>
+        <p>It is easy to write and it is first order: halving \(h\) roughly halves the error. On the quaternion kinematics, though, it has a flaw you can prove in two lines. One Euler step multiplies \(q\) by the matrix \(I+\tfrac h2\Omega\). Because \(\Omega\) is skew-symmetric (\(\Omega^\mathsf{T}=-\Omega\)) and \(\Omega^\mathsf{T}\Omega=\lVert\omega\rVert^2 I\), the cross terms cancel and</p>
+        <div class="eq">\[ \lVert q_{n+1}\rVert^2=q_n^\mathsf{T}\big(I+\tfrac h2\Omega\big)^{\mathsf T}\big(I+\tfrac h2\Omega\big)\,q_n=\Big(1+\frac{h^2\lVert\omega\rVert^2}{4}\Big)\lVert q_n\rVert^2 \]</div>
+        <p>The factor is larger than 1 for any non-zero rate, so the quaternion grows on <em>every</em> step and never shrinks. The growth compounds: at \(\omega=(5,\,-3,\,4)\) deg/s and \(h=0.1\) s, \(|q|\) reaches 1.0192 after 100 s <span class="tag tag-derived">Derived</span>. A quaternion that is not unit length is no longer a pure rotation. It stretches every vector it rotates and corrupts the error angle that the controller and the safe-mode logic read.</p>
+        <p>You may have met Euler time stepping as a first numerical-methods exercise: hand-coded Euler and Runge–Kutta loops are typical content of an introductory programming subject for engineers <span class="tag tag-typical">Typical content</span>. The same rectangle rule hides inside a digital PID, whose integral term is the running sum \(\sum e\,\Delta t\). And a residual block \(x+F(x)\) in a deep network has exactly the shape of one explicit Euler step, with depth playing the role of time <span class="tag tag-analogy">Analogy</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ rk4 -->
+    <section id="rk4" aria-labelledby="rk4-title">
+      <h2 id="rk4-title">RK4 and Simpson</h2>
+      <div class="prose">
+        <p>The classical fourth-order Runge–Kutta method, <dfn data-term="rk4">RK4</dfn>, is what the project used <span class="tag tag-project">Project</span>. It samples the slope four times per step, twice at the midpoint, and blends the samples with weights 1-2-2-1:</p>
+        <div class="eq">\[ \begin{aligned} k_1&=f(x_n), & k_2&=f\big(x_n+\tfrac h2 k_1\big),\\ k_3&=f\big(x_n+\tfrac h2 k_2\big), & k_4&=f\big(x_n+h\,k_3\big),\end{aligned}\qquad x_{n+1}=x_n+\tfrac h6\big(k_1+2k_2+2k_3+k_4\big) \]</div>
+        <p>Why those weights? If \(f\) depends only on time, then \(k_2=k_3=f(t_n+\tfrac h2)\) and the update collapses to</p>
+        <div class="eq">\[ x_{n+1}=x_n+\frac h6\Big[f(t_n)+4f\big(t_n+\tfrac h2\big)+f(t_n+h)\Big] \]</div>
+        <p>which is Simpson's rule for \(\int f\,dt\) over the step. Numerical quadrature with the trapezoid and Simpson rules is typical content of an engineering mathematics subject <span class="tag tag-typical">Typical content</span>. This site uses the trapezoid rule, Simpson's lower-order cousin, to turn logged torque into the control-effort metric.</p>
+        <p>The deeper reason is Taylor series. The four stages are arranged so that the Taylor expansion of the update matches the true solution up to the \(h^4\) term; the first mismatch is in \(h^5\). So the <em>local</em> error made in one step is \(O(h^5)\). Over a fixed duration \(T\) there are \(T/h\) steps, and the local errors add up to a <em>global</em> error of \(O(h^4)\). Taylor series with remainder are typical content of a second calculus subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>In code, a step is a small, single-purpose function that takes the dynamics as an argument, so the same stepper can serve the attitude model, a wheel model or an estimator:</p>
+        <pre class="code-block" tabindex="0" role="region" aria-label="Code: one RK4 step"><code>function rk4Step(f, x, h) {
+  const k1 = f(x);
+  const k2 = f(axpy(x, h / 2, k1));   // axpy(x, a, k) = x + a·k
+  const k3 = f(axpy(x, h / 2, k2));
+  const k4 = f(axpy(x, h, k3));
+  return x.map((xi, i) => xi + h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+}</code></pre>
+        <p>RK4 costs four evaluations of \(f\) per step against Euler's one. That is a bargain: at \(h=0.1\) s the RK4 norm error after 100 s is about \(-3.8\times10^{-13}\) <span class="tag tag-derived">Derived</span>, while Euler's is \(1.9\times10^{-2}\) <span class="tag tag-derived">Derived</span>. Getting Euler that close would take a step tens of billions of times smaller.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ norm -->
+    <section id="norm" aria-labelledby="norm-title">
+      <h2 id="norm-title">Why |q| drifts and renormalisation</h2>
+      <div class="prose">
+        <p>The exact solution keeps \(|q|=1\) for ever. Differentiate the squared norm along the true flow:</p>
+        <div class="eq">\[ \frac{d}{dt}\lVert q\rVert^2=2\,q^\mathsf{T}\dot q=q^\mathsf{T}\Omega(\omega)\,q=0 \]</div>
+        <p>The last step holds because the quadratic form of a skew-symmetric matrix is zero: \(q^\mathsf{T}\Omega q\) equals its own transpose \(q^\mathsf{T}\Omega^\mathsf{T}q=-q^\mathsf{T}\Omega q\). Matrices, transposes and this kind of argument are typical content of a first engineering mathematics subject <span class="tag tag-typical">Typical content</span>. Geometrically, a unit quaternion lives on the unit sphere in four dimensions and the true motion slides along that sphere.</p>
+        <p>Discrete steps leave the sphere. Euler always steps outward, by the factor above. RK4 steps very slightly inward, because its update truncates the exponential series after the fourth power: after 100 s at \(h=0.1\) s the RK4 drift is \(-3.8\times10^{-13}\) <span class="tag tag-derived">Derived</span>, ten orders of magnitude below Euler's. For a constant rate there is also an exact one-step solution, the matrix exponential, which the widget below uses as ground truth:</p>
+        <div class="eq">\[ q(t+h)=\Big[\cos\big(\tfrac{|\omega|h}{2}\big)\,I+\frac{\sin\big(|\omega|h/2\big)}{|\omega|}\,\Omega(\omega)\Big]\,q(t) \]</div>
+        <p class="eq-note">It follows from \(\Omega^2=-|\omega|^2 I\): the power series of \(e^{\Omega h/2}\) splits into a cosine series and a sine series.</p>
+        <p>The project <dfn data-term="renormalisation">renormalises</dfn> after every RK4 step, \(q\leftarrow q/|q|\) <span class="tag tag-project">Project</span>. It is cheap and it ends the norm drift, but notice what it is: a projection back onto the sphere, not a correction. It fixes the length and leaves any error in the <em>direction</em> alone. In the widget, toggle renormalisation and watch \(|q|\) change while the attitude error against the exact solution does not. Strapdown inertial navigation does the same thing with real gyro data, integrating \(\dot q=\tfrac12\Omega(\omega)q\) and renormalising, which is typical content of a navigational-systems subject <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-euler-rk4" aria-labelledby="w-euler-rk4-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-euler-rk4-title">Euler vs RK4 vs exact</h3>
+          <p class="widget-try"><strong>Try:</strong> raise the step \(h\) from 0.01 s to 1 s, then switch renormalisation on. <strong>Notice:</strong> Euler's \(|q|\) error grows with \(h\) and time; renormalising fixes \(|q|\) but not Euler's attitude error.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Constant body rate, kinematics only, 100 s. Both methods call the site's <code>ADCS.integrators.step</code>; the exact step is <code>quat.expRotvec</code>. Values below 10⁻¹⁶, the rounding level, are drawn at 10⁻¹⁶.</p>
+          <span class="tags"><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ order -->
+    <section id="order" aria-labelledby="order-title">
+      <h2 id="order-title">Order of accuracy</h2>
+      <div class="prose">
+        <p>A method of <dfn data-term="order-of-accuracy">order</dfn> \(p\) has a global error of about \(C\,h^p\) once \(h\) is small. Halving the step therefore divides the error by \(2^p\), and the ratio of successive errors measures \(p\) directly:</p>
+        <div class="eq">\[ \frac{e(h)}{e(h/2)}\approx 2^p\qquad\Longrightarrow\qquad p\approx\log_2\frac{e(h)}{e(h/2)} \]</div>
+        <p>Expect a ratio of about 2 for Euler (\(p=1\)), about 4 for the midpoint method RK2 (\(p=2\)) and about 16 for RK4 (\(p=4\)). The errors are measured against a reference run of RK4 with a step 64 times smaller, whose own error is far below everything being compared.</p>
+        <p>This is the same doubling-ratio test the Algorithms notes use on running times: double \(n\) and a ×4 in time means \(O(n^2)\). Here it is the best unit test an integrator can have. A typo in one RK4 stage still produces smooth, believable trajectories, and only the ratio gives it away. The test problem below is torque-free rotation, \(J\dot\omega=-\omega\times J\omega\), which conserves kinetic energy and the angular-momentum magnitude exactly. Conservation of both in torque-free motion is typical content of a physics subject that covers rotation and angular momentum <span class="tag tag-typical">Typical content</span>, so their drift is a second accuracy check.</p>
+      </div>
+
+      <figure class="widget" id="w-order" aria-labelledby="w-order-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-order-title">Order-of-accuracy detective</h3>
+          <p class="widget-try"><strong>Try:</strong> read the ratios for the correct methods, then pick a mystery variant of RK4 and answer the question. <strong>Notice:</strong> a broken RK4 still converges, but its ratio drops from about 16 to about 4.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Torque-free Euler equations with the project inertia, \(\omega_0=(0.1,\,0.2,\,-0.15)\) rad/s, integrated for 10 s. Reference: RK4 at \(h=0.1/64\) s.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ stability -->
+    <section id="stability" aria-labelledby="stability-title">
+      <h2 id="stability-title">Step size and stability</h2>
+      <div class="prose">
+        <p>Accuracy asks whether errors are small; <dfn data-term="stability-region">stability</dfn> asks whether they stay small instead of growing step after step. The standard test linearises the dynamics around the motion of interest and applies the method to \(\dot\omega=\lambda\omega\). Every step then multiplies \(\omega\) by an amplification factor \(R(z)\) that depends only on \(z=h\lambda\):</p>
+        <div class="eq">\[ R_\text{Euler}(z)=1+z,\qquad R_\text{RK4}(z)=1+z+\frac{z^2}{2}+\frac{z^3}{6}+\frac{z^4}{24} \]</div>
+        <p>The numerical solution decays only if \(|R(z)|\le 1\). On the negative real axis Euler is stable for \(-2\le z\le 0\), that is \(h\le 2/|\lambda|\); RK4 is stable out to \(z\approx-2.785\). Notice that RK4's factor is the Taylor series of \(e^z\) cut off after \(z^4\), the same truncation that made the quaternion shrink slightly in the last section.</p>
+        <p>Detumble supplies a concrete \(\lambda\). The law \(\tau=-K_d\,\omega\) turns each axis into \(\dot\omega=-(K_d/J)\,\omega\), so on the z axis \(\lambda=-0.05/0.025=-2\) s⁻¹, with \(K_d\) a <span class="tag tag-site">Site default</span> and \(J_z\) from the project. The critical step is 1 s for Euler and 1.39 s for RK4 <span class="tag tag-derived">Derived</span>, a hundred times larger than dt = 0.01 s. The simulator is nowhere near its stability limit: the step is set by the control period, not by the integrator.</p>
+        <p>The same arithmetic runs machine learning. Gradient descent \(\theta\leftarrow\theta-\eta\nabla L\) is forward Euler on the gradient flow \(\dot\theta=-\nabla L\), and on a quadratic with curvature \(\lambda\) the learning rate must satisfy \(\eta<2/\lambda\), the Euler limit again <span class="tag tag-analogy">Analogy</span>. The Intelligent Systems notes record what happens just past that limit: a learning rate only 5% too large diverged within 10 epochs.</p>
+      </div>
+
+      <figure class="widget" id="w-stability" aria-labelledby="w-stability-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-stability-title">Stability region</h3>
+          <p class="widget-try"><strong>Try:</strong> drag \(z=h\lambda\) from −0.5 towards −3 with Euler, then switch to RK4. <strong>Notice:</strong> Euler's sequence starts to alternate in sign and then grows past \(z=-2\); RK4 holds out to about −2.785.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>\(\lambda=-K_d/J_i\) per axis with the detumble gain. The table converts the chosen \(z\) into a step size for each axis.</p>
+          <span class="tags"><span class="tag tag-derived">Derived</span><span class="tag tag-site">Site default</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ float -->
+    <section id="float" aria-labelledby="float-title">
+      <h2 id="float-title">Floating point and timers</h2>
+      <div class="prose">
+        <p>Even a perfect method runs on imperfect numbers. IEEE 754 doubles (float64) carry about 15 significant digits and singles (float32) about 7; the <dfn data-term="machine-epsilon">machine epsilon</dfn>, the gap between 1 and the next representable number, is \(2.2\times10^{-16}\) and \(1.2\times10^{-7}\). The Data Structures notes cover exactly this representation, and number formats (two's complement, fixed point, IEEE 754) are typical content of a computer-architecture subject <span class="tag tag-typical">Typical content</span>. Flight processors often compute in float32, so three traps matter.</p>
+        <p><strong>Error angles.</strong> For a small error, \(q_0=\cos(\theta/2)\approx1-\theta^2/8\) sits just below 1. Once \(\theta^2/8\) is smaller than half the gap below 1, \(q_0\) rounds to exactly 1 and \(2\arccos(q_0)\) returns zero: in float32 this happens below about \(4.9\times10^{-4}\) rad, about 0.03° <span class="tag tag-derived">Derived</span>. Just above the threshold the answer comes in coarse steps. The form \(2\,\operatorname{atan2}(\lVert q_v\rVert,\,q_0)\) reads the small part \(\lVert q_v\rVert\approx\theta/2\) directly and stays accurate to the last digit, which is why the site, like the project, never uses acos for error angles.</p>
+        <p><strong>Timers.</strong> 0.01 has no exact binary form, so the stored value is a hair off and the error accumulates. Adding 0.01 800 times in float64 gives 7.99999999999987, not 8, and a loop that waits for \(t\ge 8\) needs <strong>801</strong> steps. A dwell timer written that way fires one step late. Counting whole steps cannot drift: this site's mode logic counts the 8 s dwell as an integer, 800 steps at dt = 0.01 s <span class="tag tag-derived">Derived</span>.</p>
+        <p><strong>Comparisons.</strong> Never test floats with ==. Use a tolerance that matches the meaning of the number, such as \(\big|\,|q|-1\big|<10^{-9}\) for a renormalisation check, and compare thresholds with the strict inequality the requirement states.</p>
+      </div>
+
+      <figure class="widget" id="w-float" aria-labelledby="w-float-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-float-title">Float precision lab</h3>
+          <p class="widget-try"><strong>Try:</strong> in float32, slide the true angle down past \(5\times10^{-4}\) rad, then switch between float32 and float64 and read the timer table in panel B. <strong>Notice:</strong> in float32 acos drops to zero inside the shaded band while atan2 tracks the true angle; the float64 timer reaches 8 s one step late, and the float32 one is on time only because its rounding happens to run ahead.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>float32 is emulated with <code>Math.fround</code> after every operation. The x axis of the angle plot is the base-10 exponent of the true angle; a computed angle of exactly zero cannot sit on a log axis, so it is drawn at the axis floor, 10⁻⁷ rad. The timer table always shows both precisions; its plot follows the toggle.</p>
+          <span class="tags"><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ events -->
+    <section id="events" aria-labelledby="events-title">
+      <h2 id="events-title">Locating a threshold crossing</h2>
+      <div class="prose">
+        <p>The simulator checks its thresholds once per step, so it learns that the rate crossed 0.5 deg/s somewhere inside a 0.01 s step, but not where. For a requirement such as "reach the detumble threshold within 60 s" that resolution is ample. When finer timing matters, for example in the spread of detumble times across Monte Carlo trials, the crossing can be located inside the step.</p>
+        <p>The trick is bisection. Within one short step the predicate "\(|\omega|<0.5\) deg/s" changes value once, so it is monotone. Re-integrate from the start of the step over half the step and check which half contains the crossing; keep that half and repeat. Each halving halves the uncertainty, so after \(k\) halvings it is \(h/2^k\):</p>
+        <div class="eq">\[ \Delta t_k=\frac{h}{2^k},\qquad \Delta t_{10}=\frac{0.01\ \text{s}}{1024}\approx 10\ \mu\text{s} \]</div>
+        <p>Ten extra sub-steps buy a thousand-fold sharper crossing time <span class="tag tag-derived">Derived</span>. This is binary search on a continuous variable, from the same toolbox as the Algorithms notes' search and complexity material.</p>
+      </div>
+
+      <figure class="widget" id="w-bisect" aria-labelledby="w-bisect-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-bisect-title">Event location by bisection</h3>
+          <p class="widget-try"><strong>Try:</strong> press "Next halving" ten times, watching the shaded interval. <strong>Notice:</strong> each row halves the interval; after 10 rows the crossing is pinned to about 10 µs inside a 10 ms step.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Preset HIGHRATE, first time \(|\omega|\) falls below 0.5 deg/s after safe-mode entry. Each sub-step is one RK4 step from the start of the 10 ms step with the same held torque (<code>dynamics.propagate</code>).</p>
+          <span class="tags"><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <p class="in-short"><strong>In short:</strong> the integrator is part of the model. The project's choice of RK4 with renormalisation after every step keeps numerical error ten orders of magnitude below the 2° and 0.5 deg/s thresholds, the 0.01 s step sits far inside the stability limit, and integer counters and atan2 error angles keep the logic exact where floats would drift. The subjects below supplied the series, matrices, algorithms and number formats behind those choices.</p>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

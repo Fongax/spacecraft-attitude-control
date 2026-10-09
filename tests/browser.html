@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Runs the simulation-engine test suite in the browser and shows a pass/fail table.">
+<title>Engine tests · Attitude Control: The Big Picture</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%231f5fbf' stroke-width='3'/%3E%3Cpath d='M16 5v22M5 16h22' stroke='%231f5fbf' stroke-width='2'/%3E%3C/svg%3E">
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('adcs-theme');
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { /* storage blocked: follow the system theme */ }
+  })();
+</script>
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --surface-2: #eef1f5; --text: #14181f; --text-2: #4a5361;
+    --border: #d3d9e2; --accent: #1f5fbf; --ok: #1a7f37; --bad: #c62828; --warn: #9a6700;
+    --ok-bg: rgba(26, 127, 55, .10); --bad-bg: rgba(198, 40, 40, .10);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1117; --surface: #161b22; --surface-2: #1f2630; --text: #e6edf3; --text-2: #9aa7b4;
+      --border: #30363d; --accent: #6ea8fe; --ok: #3fb950; --bad: #f85149; --warn: #d29922;
+      --ok-bg: rgba(63, 185, 80, .14); --bad-bg: rgba(248, 81, 73, .10);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --surface: #161b22; --surface-2: #1f2630; --text: #e6edf3; --text-2: #9aa7b4;
+    --border: #30363d; --accent: #6ea8fe; --ok: #3fb950; --bad: #f85149; --warn: #d29922;
+    --ok-bg: rgba(63, 185, 80, .14); --bad-bg: rgba(248, 81, 73, .10);
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .skip-link { position: absolute; left: -9999px; top: 0; }
+  .skip-link:focus { left: 16px; top: 8px; background: var(--surface); padding: 4px 8px; z-index: 2; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: clamp(1.5rem, 4vw, 2.25rem); line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.125rem; margin: 28px 0 8px; }
+  p { margin: 0 0 12px; max-width: 72ch; }
+  a { color: var(--accent); }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .875rem; }
+  .summary {
+    display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin: 16px 0;
+  }
+  .verdict { font-weight: 700; padding: 2px 10px; border-radius: 999px; border: 1px solid currentColor; }
+  .verdict.pass { color: var(--ok); background: var(--ok-bg); }
+  .verdict.fail { color: var(--bad); background: var(--bad-bg); }
+  .verdict.running { color: var(--text-2); }
+  .btn {
+    font: inherit; min-height: 40px; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    background: var(--accent); color: var(--surface); border: 1px solid var(--accent);
+  }
+  .btn:disabled { opacity: .6; cursor: progress; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  progress { width: 160px; max-width: 100%; height: 10px; accent-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; background: var(--surface); border: 1px solid var(--border); }
+  caption { text-align: left; font-weight: 600; padding: 8px 0; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
+  thead th { background: var(--surface-2); font-size: .875rem; }
+  th.res, td.res { width: 6.5rem; }
+  th.ms, td.ms { width: 4.5rem; text-align: right; }
+  td.ms { color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .badge { display: inline-flex; gap: 4px; align-items: center; font-weight: 700; font-size: .875rem; white-space: nowrap; }
+  .badge.pass { color: var(--ok); }
+  .badge.fail { color: var(--bad); }
+  .badge.skip { color: var(--warn); }
+  tr.fail td { background: var(--bad-bg); }
+  .detail { display: block; color: var(--text-2); font-size: .875rem; margin-top: 2px; }
+  tr.fail .detail { color: var(--text); }
+  .group-row th { background: var(--surface-2); font-size: .9375rem; }
+  .muted { color: var(--text-2); font-size: .875rem; }
+  @media (max-width: 599px) {
+    th.res, td.res { width: 5.25rem; padding-left: 8px; padding-right: 6px; }
+    th.ms, td.ms { width: 3.5rem; padding-left: 4px; padding-right: 8px; }
+    th, td { padding-top: 6px; padding-bottom: 6px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+<script defer src="../assets/js/adcs-math.js"></script>
+<script defer src="../assets/js/adcs-sim.js"></script>
+<script defer src="../assets/js/adcs-data.js"></script>
+<script defer src="../assets/js/adcs-ui.js"></script>
+<script defer src="../assets/js/adcs-plot.js"></script>
+<script defer src="../assets/js/adcs-wire.js"></script>
+<script defer src="engine.test.js"></script>
+</head>
+<body data-page="tests">
+<a class="skip-link" href="#main">Skip to the results</a>
+<main id="main">
+  <h1>Engine tests</h1>
+  <p>This page loads the shared scripts and runs the same engine assertions as <code>node tests/run-node.js</code>: the reference values, the frame and quaternion conventions, the safe-mode logic, the Monte Carlo campaign and the performance budgets.</p>
+  <div class="summary">
+    <span id="verdict" class="verdict running">Running…</span>
+    <span id="counts" class="muted" aria-live="polite">Starting the tests.</span>
+    <progress id="progress" max="1" value="0" aria-label="Test progress"></progress>
+    <button id="rerun" class="btn" type="button" disabled>Run again</button>
+  </div>
+  <h2 id="scripts-h">Shared scripts</h2>
+  <table aria-labelledby="scripts-h">
+    <thead><tr><th class="res" scope="col">Result</th><th scope="col">Script and namespace</th></tr></thead>
+    <tbody id="scripts"></tbody>
+  </table>
+  <h2 id="results-h">Engine assertions</h2>
+  <table id="results" aria-labelledby="results-h">
+    <thead><tr><th class="res" scope="col">Result</th><th scope="col">Test</th><th class="ms" scope="col">ms</th></tr></thead>
+  </table>
+  <noscript><p>The tests need JavaScript.</p></noscript>
+</main>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+    var verdict = document.getElementById('verdict');
+    var counts = document.getElementById('counts');
+    var progress = document.getElementById('progress');
+    var rerun = document.getElementById('rerun');
+    var table = document.getElementById('results');
+    var scripts = document.getElementById('scripts');
+
+    function el(tag, cls, text) {
+      var e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    }
+    function badge(status) {
+      var map = { pass: ['✓', 'PASS'], fail: ['✗', 'FAIL'], skip: ['–', 'SKIP'] };
+      var b = el('span', 'badge ' + status);
+      b.appendChild(el('span', '', map[status][0])).setAttribute('aria-hidden', 'true');
+      b.appendChild(el('span', '', map[status][1]));
+      return b;
+    }
+
+    var A = window.ADCS || {};
+    var shared = [
+      ['assets/js/adcs-math.js', 'ADCS.vec, quat, rng, stats', !!(A.vec && A.quat && A.rng && A.stats)],
+      ['assets/js/adcs-sim.js', 'ADCS.sim, mc, presets, tests, hash', !!(A.sim && A.mc && A.presets && A.tests && A.hash)],
+      ['assets/js/adcs-data.js', 'ADCS.data', !!A.data],
+      ['assets/js/adcs-ui.js', 'ADCS.ui', !!A.ui],
+      ['assets/js/adcs-plot.js', 'ADCS.plot', !!A.plot],
+      ['assets/js/adcs-wire.js', 'ADCS.wire', !!A.wire]
+    ];
+    var scriptFailures = 0;
+    shared.forEach(function (s) {
+      var tr = el('tr', s[2] ? '' : 'fail');
+      var td = el('td', 'res');
+      td.appendChild(badge(s[2] ? 'pass' : 'fail'));
+      tr.appendChild(td);
+      var name = el('td');
+      name.appendChild(el('code', '', s[0]));
+      name.appendChild(el('span', 'detail', s[2] ? s[1] + ' loaded' : s[1] + ' missing'));
+      tr.appendChild(name);
+      scripts.appendChild(tr);
+      if (!s[2]) scriptFailures++;
+    });
+
+    function run() {
+      var T = window.ADCSTests;
+      Array.prototype.slice.call(table.tBodies).forEach(function (b) { table.removeChild(b); });
+      var tbody = null;
+      rerun.disabled = true;
+      verdict.className = 'verdict running';
+      verdict.textContent = 'Running…';
+      if (!T || !A.sim) {
+        verdict.className = 'verdict fail';
+        verdict.textContent = '✗ Not run';
+        counts.textContent = 'The engine or the test file did not load.';
+        return;
+      }
+      progress.max = T.cases.length;
+      progress.value = 0;
+      var lastGroup = '';
+      var failed = 0;
+      T.runAll({
+        onResult: function (r, done, total) {
+          if (r.group !== lastGroup || !tbody) {
+            tbody = el('tbody');
+            var g = el('tr', 'group-row');
+            var th = el('th', '', r.group);
+            th.colSpan = 3;
+            th.scope = 'rowgroup';
+            g.appendChild(th);
+            tbody.appendChild(g);
+            table.appendChild(tbody);
+            lastGroup = r.group;
+          }
+          if (r.status === 'fail') failed++;
+          var tr = el('tr', r.status);
+          var res = el('td', 'res');
+          res.appendChild(badge(r.status));
+          tr.appendChild(res);
+          var name = el('td', '', r.name);
+          if (r.detail) name.appendChild(el('span', 'detail', r.detail));
+          tr.appendChild(name);
+          tr.appendChild(el('td', 'ms', r.ms.toFixed(0)));
+          tbody.appendChild(tr);
+          progress.value = done;
+          verdict.textContent = 'Running ' + done + '/' + total + (failed ? ' (' + failed + ' failed)' : '');
+        }
+      }).then(function (s) {
+        var allGood = s.failed === 0 && scriptFailures === 0;
+        verdict.className = 'verdict ' + (allGood ? 'pass' : 'fail');
+        verdict.textContent = allGood ? '✓ All green' : '✗ ' + (s.failed + scriptFailures) + ' failing';
+        counts.textContent = s.passed + ' passed, ' + s.failed + ' failed, ' + s.skipped + ' skipped in ' +
+          (s.ms / 1000).toFixed(1) + ' s' + (scriptFailures ? '; ' + scriptFailures + ' shared script(s) missing' : '') + '.';
+        document.body.setAttribute('data-status', allGood ? 'pass' : 'fail');
+        rerun.disabled = false;
+      }, function (e) {
+        verdict.className = 'verdict fail';
+        verdict.textContent = '✗ Runner error';
+        counts.textContent = String(e && e.message ? e.message : e);
+        document.body.setAttribute('data-status', 'fail');
+        rerun.disabled = false;
+      });
+    }
+    rerun.addEventListener('click', function () {
+      if (window.ADCS && ADCS.tests && ADCS.tests.clearCache) ADCS.tests.clearCache();
+      run();
+    });
+    run();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 Actuators: reaction wheels, motors and power · Attitude Control: The Big Picture</title>
+<meta name="description" content="Turn the ±3 mN m torque limit into reaction-wheel physics: momentum exchange, motor limits, momentum budgets and saturation.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m06.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m06.js"></script>
+</head>
+<body data-page="m06">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 06</span>
+      <h1>Actuators: reaction wheels, motors and power</h1>
+      <p class="module-purpose">Open the ±3 mN m box: the reaction wheel, the motor that drives it, the momentum it can store and what happens when a torque command does not fit.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Design</span>
+        <span>About 30 min</span>
+      </p>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ reaction -->
+    <section id="reaction" aria-labelledby="reaction-title">
+      <h2 id="reaction-title">Reaction torque and momentum exchange</h2>
+      <div class="prose">
+        <p>The project treated the actuator as a box that delivers whatever body torque the controller asks for, up to ±0.003 N m on each axis <span class="tag tag-project">Project</span>. Inside that box sits a <dfn data-term="reaction-wheel">reaction wheel</dfn>: a flywheel on an electric motor. The motor cannot push on empty space. It pushes on the wheel, and the wheel pushes back on the spacecraft through the motor's mounting: spin the wheel up one way and the body turns the other way.</p>
+        <p>That is <dfn data-term="momentum-exchange">momentum exchange</dfn>. The total angular momentum of body plus wheels, \(H\), can only be changed by external torques such as the disturbance \(\tau_d\); the motor's torque is internal and only moves momentum between the two:</p>
+        <div class="eq">\[ H=J\omega+h_w,\qquad \tau_c=-\dot h_w \]</div>
+        <p>Here \(h_w\) is the wheels' momentum in N m s and \(\tau_c\) the control torque on the body. Putting the wheels into Euler's equation adds one term:</p>
+        <div class="eq">\[ J\dot\omega+\omega\times\big(J\omega+h_w\big)=-\dot h_w+\tau_d \]</div>
+        <p>The project modelled the commanded body torque \(\tau_c=-\dot h_w\) and left out the wheel gyroscopic term \(\omega\times h_w\). Adding it, with each wheel's speed as an extra state, is the natural next step <span class="tag tag-extension">Extension</span>. Angular momentum and impulse–momentum are typical content of a kinematics-and-dynamics subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The same principle runs through aviation. A helicopter's main rotor drives the fuselage round the other way, which is why it needs a tail rotor, and a multirotor drone yaws by speeding up the rotors that spin one way and slowing the others; torque reaction and multirotor control are typical content of rotary-wing and remotely piloted aircraft subjects <span class="tag tag-typical">Typical content</span>. Gyroscopic instruments, which sense rotation through a spinning rotor's rigidity in space and its precession, are typical content of a light-aircraft systems subject <span class="tag tag-typical">Typical content</span>. A reaction wheel shares the spinning rotor but works differently: it turns the body by speeding up or slowing down (\(\tau_c=-\dot h_w\)), while the actuator that uses precession is the control moment gyro.</p>
+      </div>
+
+      <figure class="widget" id="w-turntable" aria-labelledby="w-turntable-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-turntable-title">Torque-reaction turntable</h3>
+          <p class="widget-try"><strong>Try:</strong> pick a motor torque and a profile, then press Play or drag the time slider. <strong>Notice:</strong> the body and the wheel turn in opposite directions, their momenta mirror each other, and the total stays exactly flat.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>One axis: body \(J_y\) from the project, wheel inertia \(I_w=5\times10^{-5}\) kg m² (illustrative), 20 s with <code>ADCS.sim.momentumExchange</code>. The wheel’s spin relative to the body is drawn at 1/100 of its true rate so that it can be followed by eye.</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-illustrative">Illustrative</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ limit -->
+    <section id="limit" aria-labelledby="limit-title">
+      <h2 id="limit-title">The ±3 mN m box</h2>
+      <div class="prose">
+        <p>The torque limit is small, and it sets the pace of everything. Dividing by the inertias gives the largest angular acceleration each axis can reach:</p>
+        <div class="eq">\[ \alpha_{max}=\frac{\tau_{max}}{J_i}=0.086,\ 0.075,\ 0.120\ \text{rad/s}^2\quad(x,\ y,\ z) \]</div>
+        <p class="eq-note"><span class="tag tag-derived">Derived</span> from \(\tau_{max}=0.003\) N m and \(J=\operatorname{diag}(0.035,\,0.040,\,0.025)\) kg m².</p>
+        <p>So the minimum time to brake a rate \(\omega_0\) is \(t=J\omega_0/\tau_{max}\): 1.4 s from the 6 deg/s safe-mode threshold on the y axis, and about 3 s from 13 deg/s <span class="tag tag-derived">Derived</span>, the kind of momentum problem that is typical content of a first-year physics subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>Where does the number come from physically? A DC or brushless motor makes torque in proportion to current, \(\tau=k_M I\), with the torque constant \(k_M\) in N m/A. With an illustrative \(k_M=6\) mN m/A <span class="tag tag-illustrative">Illustrative</span>, 3 mN m needs 0.5 A. The box is really a <em>current limit</em> set by the drive electronics and the power bus.</p>
+        <p>Why is it fair to treat the wheel as an ideal torque source that delivers the command instantly? The motor winding is an R–L circuit, and its current, so its torque, follows a command with the time constant \(L/R\). With an illustrative 0.5 mH and 4 Ω that is about 0.125 ms <span class="tag tag-illustrative">Illustrative</span>, while the attitude loop moves on time scales of \(J/K_d\approx 1\) s. Four orders of magnitude apart, the fast loop can be treated as instantaneous. The Electromechanics notes teach exactly this time-constant reasoning (63% after one \(L/R\), 99% after five). In software the same box appears once more: a torque command stored as a saturating fixed-point number must clip at its limits rather than wrap around from the largest positive value to the most negative, a number-format issue that is typical content of a computer-architecture subject <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ motor -->
+    <section id="motor" aria-labelledby="motor-title">
+      <h2 id="motor-title">Inside the wheel motor</h2>
+      <div class="prose">
+        <p>A spinning motor is also a generator: its rotation induces a <dfn data-term="back-emf">back-EMF</dfn> \(k_e\omega_w\) that opposes the supply. In SI units the back-EMF constant \(k_e\) (V s/rad) equals the torque constant \(k_M\) (N m/A). The winding then obeys</p>
+        <div class="eq">\[ V=IR+k_e\,\omega_w,\qquad \tau=k_M I\quad\Longrightarrow\quad \omega_w=\frac{V}{k_e}\Big(1-\frac{\tau}{\tau_S}\Big),\quad \tau_S=\frac{k_MV}{R} \]</div>
+        <p>This is the straight speed–torque line \(n=n_0(1-T/T_S)\) of the Electromechanics notes. Take an illustrative wheel motor with \(V_{bus}=8\) V, \(R=4\) Ω and \(k_M=0.006\) <span class="tag tag-illustrative">Illustrative</span>. At stall it draws 2 A and makes 12 mN m; with no load it spins up to 1333 rad/s <span class="tag tag-illustrative">Illustrative</span>. The drive also limits the current, here to 0.5 A, so the torque actually available at speed \(\omega_w\) is</p>
+        <div class="eq">\[ \tau_{max}(\omega_w)=\min\Big(k_M I_{lim},\ \frac{k_M\,(V_{bus}-k_e\,\omega_w)}{R}\Big) \]</div>
+        <p>The full 3 mN m is available only up to 1000 rad/s, about 9550 rpm <span class="tag tag-illustrative">Illustrative</span>; above that, back-EMF eats the voltage headroom and the torque falls along the line. The project's constant ±3 mN m box is the left-hand, current-limited part of this envelope. At that corner the power balance is</p>
+        <div class="eq">\[ VI=I^2R+\tau\,\omega_w:\qquad 4\ \text{W}=1\ \text{W}+3\ \text{W},\qquad \eta=75\% \]</div>
+        <p class="eq-note">The powers and the efficiency are <span class="tag tag-illustrative">Illustrative</span>: 8 V × 0.5 A in, \((0.5\ \text{A})^2\times4\ \Omega\) lost, 3 mN m × 1000 rad/s out.</p>
+        <p>The 1 W lost in the winding becomes heat that has to leave a vacuum-sealed wheel. Shaft power \(P=T\omega\), here 1.9 W at 3 mN m and 6000 rpm <span class="tag tag-illustrative">Illustrative</span>, is typical content of a mechanics-of-materials subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>Real wheels use brushless DC motors. Brushes wear and arc, and graphite lubricates poorly in vacuum; electronic commutation from Hall sensors avoids both, as the Electromechanics notes explain. A wheel's speed and torque signs are independent, so the drive must work in all four quadrants. When the torque opposes the speed, braking a spinning wheel, the machine runs as a generator and returns energy to the bus (regenerative braking), which the power system must be able to absorb. Brushless motors and their controllers are also typical content of a remotely piloted aircraft subject <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-envelope" aria-labelledby="w-envelope-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-envelope-title">Wheel torque envelope</h3>
+          <p class="widget-try"><strong>Try:</strong> lower the bus voltage until the corner speed drops, then switch on "Overlay a detumble" and move the starting wheel speed towards −1000 rad/s. <strong>Notice:</strong> the ±3 mN m box only holds below the corner; a wheel already spinning fast cannot deliver the full torque in the direction that speeds it up.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Motoring envelope (torque in the direction of rotation). Braking torque is limited only by the current limit. The detumble is preset HIGHRATE on the y axis with \(\omega_w=\omega_{w,0}-\int\tau_y\,dt/I_w\).</p>
+          <span class="tags"><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-project">Project</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ momentum -->
+    <section id="momentum" aria-labelledby="momentum-title">
+      <h2 id="momentum-title">Momentum budget and unloading</h2>
+      <div class="prose">
+        <p>A wheel can absorb momentum only up to its maximum speed, \(h_{max}=I_w\,\omega_{w,max}\). That makes momentum a budget, like fuel. A detumble is a one-off withdrawal: the body's momentum at the 6 deg/s safe-mode threshold about y is \(J_y\omega=0.0042\) N m s, and at the 15 deg/s safety limit 0.0105 N m s <span class="tag tag-derived">Derived</span>.</p>
+        <p>A constant disturbance is a steady drain. To hold attitude, the controller's integral action settles at \(\tau_c=-\tau_d\), so the wheels absorb the disturbance's impulse and their momentum grows linearly:</p>
+        <div class="eq">\[ h_w(t)=\tau_d\,t,\qquad t_{sat}=\frac{h_{max}}{|\tau_d|} \]</div>
+        <p>At 2×10⁻⁵ N m that is 0.108 N m s over a 90-minute orbit <span class="tag tag-derived">Derived</span>, and a wheel with \(h_{max}=0.01\) N m s saturates in 500 s <span class="tag tag-illustrative">Illustrative</span>. The project's torque-only actuator model cannot show this at all; it needs wheel speed as a state. Pilots plan fuel with reserves and a point of no return, typical content of aircraft performance and planning subjects <span class="tag tag-typical">Typical content</span>; a momentum budget has the same shape, with \(h_{max}/|\tau_d|\) as the "momentum endurance".</p>
+        <p>The budget is topped up by <dfn data-term="momentum-unloading">momentum unloading</dfn> with an external torque. A <dfn data-term="magnetorquer">magnetorquer</dfn> is a coil whose magnetic dipole \(m\) (A m²) reacts against the Earth's field \(B\) (T):</p>
+        <div class="eq">\[ \tau=m\times B,\qquad |m|\ \ge\ \frac{|\tau_d|}{|B|}\approx 0.67\ \text{A m}^2\ \ \text{at}\ 30\ \mu\text{T} \]</div>
+        <p class="eq-note">The field strength is <span class="tag tag-illustrative">Illustrative</span>; the Electromechanics notes cover the coil-torque law and the Earth's field magnitude.</p>
+        <p>The cross product hides a catch: the torque is always perpendicular to \(B\), so there is <em>no torque along the field</em>. Momentum along the field direction can only be dumped later, after the craft's orbit has turned the field. The widget below treats the momentum as lying across the field.</p>
+      </div>
+
+      <figure class="widget" id="w-bucket" aria-labelledby="w-bucket-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-bucket-title">Momentum bucket</h3>
+          <p class="widget-try"><strong>Try:</strong> press Play and watch the bucket fill, then switch the magnetorquer dump on; lower the dipole below about 0.67 A m². <strong>Notice:</strong> 500 s to saturation at the defaults; the dump only drains if \(mB\) beats the disturbance.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Simulated time runs faster than real time. \(B=30\ \mu\)T and a 5400 s orbit are illustrative; the momentum is assumed perpendicular to \(B\).</p>
+          <span class="tags"><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-project">Project</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ allocation -->
+    <section id="allocation" aria-labelledby="allocation-title">
+      <h2 id="allocation-title">Clipping vs scaling</h2>
+      <div class="prose">
+        <p>When the controller asks for more than ±3 mN m on some axis, something has to give. The project saturates each axis on its own <span class="tag tag-project">Project</span>; the site also offers a direction-preserving alternative <span class="tag tag-option">Site option</span>:</p>
+        <div class="eq">\[ \tau_{\text{clip},i}=\operatorname{clamp}\big(\tau_i,\,-\tau_{max},\,\tau_{max}\big),\qquad \tau_\text{scale}=\tau\cdot\min\Big(1,\ \frac{\tau_{max}}{\max_i|\tau_i|}\Big) \]</div>
+        <p>Clipping is the <em>nearest</em> feasible torque: because the box's constraints are separate per axis, clamping each component is exactly the Euclidean projection onto the box, a separable greedy step of the kind the Algorithms notes discuss. But it rotates the vector. A command of \([6,\,1,\,0]\) mN m clips to \([3,\,1,\,0]\), and its direction moves from 9.5° to 18.4° off the x axis <span class="tag tag-derived">Derived</span>: the craft turns about an axis the controller did not ask for. Scaling keeps the direction, \([3,\,0.5,\,0]\), at the price of delivering less torque on the axes that were within limits.</p>
+        <p>A single wheel produces a pure couple on the body. Real spacecraft often carry four wheels in a pyramid, and the body torque is then the vector resultant \(A\,\tau_\text{wheels}\) of the four, so allocation becomes a matrix problem with a spare degree of freedom; couples and resultants are typical content of an engineering statics subject <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-clip-scale" aria-labelledby="w-clip-scale-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-clip-scale-title">Clip vs scale</h3>
+          <p class="widget-try"><strong>Try:</strong> drag the commanded torque (or use the sliders or arrow keys) to a corner outside the box, then press "Run HIGHRATE both ways". <strong>Notice:</strong> the clipped point is always at least as close to the command, the scaled one always on the same line; in the detumble the difference is small.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>A 2-D slice (τz = 0) of the torque box. The runs use the full engine with <code>saturation: 'clip'</code> (project) and <code>'scale'</code> (site option).</p>
+          <span class="tags"><span class="tag tag-project">Project</span><span class="tag tag-option">Site option</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ friction -->
+    <section id="friction" aria-labelledby="friction-title">
+      <h2 id="friction-title">Non-idealities</h2>
+      <div class="prose">
+        <p>A real wheel delivers the command minus a few unwanted torques. The largest is <strong>bearing friction</strong>: a Coulomb part that flips with the direction of rotation, a viscous part that grows with speed, and a Stribeck rise at low speed, where the lubricant film is thinnest and the bearing runs in the boundary regime. A common model is</p>
+        <div class="eq">\[ \tau_f(\omega_w)=\operatorname{sign}(\omega_w)\Big(T_c+(T_s-T_c)\,e^{-(\omega_w/\omega_s)^2}\Big)+c_v\,\omega_w \]</div>
+        <p>As the wheel speed passes through zero the friction torque jumps from \(-T_s\) to \(+T_s\). That step is the reaction-wheel <em>zero-crossing</em> disturbance, often much larger than the environmental disturbance; operators bias wheel speeds away from zero or feed friction forward to avoid it. The Design of Machine Elements notes describe the lubrication regimes along the Stribeck curve, and viscous friction is typical content of a fluid-mechanics subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p><strong>Rotor imbalance</strong> is a mass offset \(U\) (kg m) that produces a force rotating with the wheel, \(F=U\omega^2\): 0.04 N at 6000 rpm for 0.1 g mm <span class="tag tag-illustrative">Illustrative</span>. It shakes the body at the wheel frequency, the micro-vibration that limits fine pointing. Density variation from casting porosity is one source, and the Manufacturing Technology notes cover casting defects in detail. <strong>Misalignment</strong> by an angle \(\delta\) leaks \(\tau\sin\delta\) into a neighbouring axis: 1° gives about 1.7% cross-coupling <span class="tag tag-derived">Derived</span>, which is why machining tolerances on wheel mounts matter.</p>
+      </div>
+
+      <figure class="widget" id="w-stribeck" aria-labelledby="w-stribeck-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-stribeck-title">Stribeck zero-crossing</h3>
+          <p class="widget-try"><strong>Try:</strong> drag the wheel speed slowly from +50 to −50 rad/s. <strong>Notice:</strong> the friction torque jumps by \(2T_s\) at zero, many times the whole environmental disturbance.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Defaults \(T_c=0.12\) mN m, \(T_s=0.2\) mN m, \(\omega_s=10\) rad/s, \(c_v=10^{-6}\) N m s/rad, all illustrative. Breakaway is never below sliding friction, so moving \(T_s\) below \(T_c\), or \(T_c\) above \(T_s\), pushes the other slider along.</p>
+          <span class="tags"><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-project">Project</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ hardware -->
+    <section id="hardware" aria-labelledby="hardware-title">
+      <h2 id="hardware-title">Hardware extension</h2>
+      <div class="callout ext" role="note">
+        <div class="callout-content">
+          <p class="callout-title">Beyond the original project scope <span class="tag tag-extension">Extension</span></p>
+          <p>The project stopped at a torque box. This section sketches the hardware behind it; every number here is <span class="tag tag-illustrative">Illustrative</span>.</p>
+        </div>
+      </div>
+      <div class="prose">
+        <p><strong>Bearings.</strong> A wheel runs for years on a preloaded pair of angular-contact ball bearings: preload makes the shaft stiff and quiet but adds friction and heat. Bearing life is a statistic, not a date. The L10 life is the life that 90% of a batch reaches, and a Weibull distribution describes the rest; the Design of Machine Elements notes cover L10 life, Weibull reliability and preload, along with the rule that one bearing locates while the other floats to allow for thermal growth.</p>
+        <p><strong>Vacuum.</strong> Lubricants evaporate and polymers outgas in vacuum, so wheel bearings use low-vapour-pressure oils in sealed housings. Choosing rotor, mount and lubricant materials, with their densities, strengths and thermal properties, draws on the material classes that are typical content of an engineering materials subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p><strong>Rotor strength.</strong> A thin rim carries a hoop stress \(\sigma=\rho\,\omega^2r^2\). <span class="calc" data-calc="hoop">For a steel rim of 40 mm radius at 1000 rad/s that is about 12 MPa</span> <span class="tag tag-illustrative">Illustrative</span>, a small fraction of a structural metal's yield strength: small wheels are limited by their motor and bearings, not by rotor strength. Hoop stress in thin-walled vessels, the same formula's static cousin, is typical content of a second mechanics-of-materials subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p><strong>Heat.</strong> With no air there is no convection: the motor's \(I^2R\) loss can leave only by conduction into the structure and by radiation, and the lubricant's viscosity rises in the cold. Conduction and radiation are typical content of an engineering thermodynamics subject, and a radiative energy balance, which gives a first-cut equilibrium temperature of about 278 K, of an atmospheric science subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p><strong>Manufacturing.</strong> Material and process variation make a real spacecraft's inertia uncertain by a few per cent; process selection and quality control are typical content of a materials-and-manufacturing subject <span class="tag tag-typical">Typical content</span>. That is one more reason the verification in <a href="m09-verification.html">module 09</a> samples many cases instead of trusting one nominal model.</p>
+      </div>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <p class="in-short"><strong>In short:</strong> the ±3 mN m box is a reaction wheel seen from far away. Its torque is a reaction, its limit is a motor current that back-EMF erodes at speed, its momentum is a budget that disturbances drain and magnetorquers refill, and when a command does not fit, the way it is trimmed changes the direction the craft turns. The subjects below supplied the motor, mechanism and momentum physics behind each of those statements.</p>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

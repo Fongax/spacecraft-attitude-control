@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 Sensors and estimation · Attitude Control: The Big Picture</title>
+<meta name="description" content="Extension: replace the true state with a gyro and a star tracker, and estimate attitude with complementary and Kalman-style filters.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 6l9 4.5v10L16 25l-9-4.5v-10z' fill='%23dfe5ee' stroke='%234a5361' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M7 10.5l9 4.5 9-4.5M16 15v10' fill='none' stroke='%234a5361' stroke-width='1.6'/%3E%3Cpath d='M16 15l-9.5 6.5' stroke='%23c8384b' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15l10.5 4.5' stroke='%231f8a7a' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M16 15V2.5' stroke='%232f63a3' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('adcs-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t);}catch(e){}d.className+=' js';}());</script>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/css/pages/m07.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/adcs-math.js"></script>
+<script defer src="assets/js/adcs-sim.js"></script>
+<script defer src="assets/js/adcs-data.js"></script>
+<script defer src="assets/js/adcs-ui.js"></script>
+<script defer src="assets/js/adcs-plot.js"></script>
+<script defer src="assets/js/adcs-wire.js"></script>
+<script defer src="assets/js/pages/m07.js"></script>
+</head>
+<body data-page="m07">
+<div class="site-header-slot" data-chrome="header">
+  <noscript>
+    <nav class="noscript-nav" aria-label="Main">
+      <a href="index.html">Big picture</a>
+      <a href="simulator.html">Simulator</a>
+      <a href="learn.html">Learn</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="glossary.html">Glossary</a>
+      <a href="about.html">About</a>
+    </nav>
+  </noscript>
+</div>
+
+<main id="main">
+  <div class="container" data-chrome="crumbs"></div>
+
+  <article class="container module">
+
+    <header class="module-hero">
+      <span class="module-num">MODULE 07</span>
+      <h1>Sensors and estimation</h1>
+      <p class="module-purpose">Take away the simulator's perfect knowledge, give the controller a gyro and a star tracker instead, and build the filters that turn their imperfect readings into an attitude it can trust.</p>
+      <p class="module-meta">
+        <span class="phase-tag">Phase: Design</span>
+        <span>About 35 min</span>
+      </p>
+      <div class="callout ext" role="note">
+        <div class="callout-content">
+          <p class="callout-title">Beyond the original project <span class="tag tag-extension">Extension</span></p>
+          <p>The project fed the controller the true simulated state; sensor noise and estimation were explicitly out of scope. Everything here is an extension built on subjects that teach its foundations.</p>
+        </div>
+      </div>
+      <p class="prereqs" data-auto="prereqs"></p>
+    </header>
+
+    <section class="objectives" aria-labelledby="objectives-title">
+      <h2 id="objectives-title">By the end you can…</h2>
+      <ul data-auto="objectives"></ul>
+    </section>
+
+    <!-- ============================================================ why -->
+    <section id="why" aria-labelledby="why-title">
+      <h2 id="why-title">Why estimate?</h2>
+      <div class="prose">
+        <p>Every controller in this project so far has been told the truth. At each step the simulation hands the control law the exact quaternion \(q\) and the exact body rate \(\omega\), straight out of the integrator. The project's requirements say so plainly: sensor noise and estimator dynamics were outside the first project scope, and the true simulated state was used for feedback <span class="tag tag-project">Project</span>. That was a sound choice for a first project. It isolates the questions the project set out to answer: dynamics, control laws, safe-mode logic and verification.</p>
+        <p>A real spacecraft never sees its state. It sees measurements. A <dfn data-term="gyro">rate gyro</dfn> reports a rate that is slightly wrong in a slowly changing way; a <dfn data-term="star-tracker">star tracker</dfn> reports an attitude a few times a second and is sometimes blinded by the Sun. Between the measurements and the controller sits an <em>estimator</em>, which keeps a belief about the state and revises it as evidence arrives. The controller then acts on the belief, not on the truth.</p>
+        <div class="eq">\[ \underbrace{(q,\ \omega)}_{\text{true state}}\ \xrightarrow{\ \text{sensors}\ }\ \underbrace{(q_m,\ \omega_m)}_{\text{measurements}}\ \xrightarrow{\ \text{estimator}\ }\ \underbrace{(\hat q,\ \hat\omega)}_{\text{belief}}\ \xrightarrow{\ \text{control law}\ }\ \tau \]</div>
+        <p>The Intelligent Systems notes give the vocabulary for this. An agent perceives its environment through sensors and acts on it through actuators, and its agent function maps the <em>whole percept sequence</em> to an action, not just the latest percept. That distinction is the heart of estimation: no single gyro sample tells you the attitude, but the history of samples, combined with an occasional absolute fix, does. In those terms the project assumed a fully observable world; a real attitude system is only partially observable and must carry its own memory.</p>
+        <p>People carry an estimator too. The inner ear's semicircular canals sense rotation but stop reporting a steady rotation after some seconds, and the otolith organs cannot tell a tilt from an acceleration. Spatial disorientation in flight comes from exactly these limits, which is why pilots are trained to trust the instruments. The vestibular system as a biological rate sensor is typical content of an aviation-medicine subject <span class="tag tag-typical">Typical content</span>. It makes the point of this module: a rate sensor alone is not enough, and fusing it with an absolute reference is what keeps the estimate honest.</p>
+        <p>The rest of the module builds that estimator piece by piece: the sensors (gyros, then absolute sensors), what goes wrong without fusion (drift), two ways to fuse (a complementary filter and a Kalman-style filter derived from Bayes' rule), and finally what happens when noisy estimates meet the safe-mode thresholds of <a href="m08-safe-mode.html">module 08</a>.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ gyros -->
+    <section id="gyros" aria-labelledby="gyros-title">
+      <h2 id="gyros-title">Rate gyros</h2>
+      <div class="prose">
+        <p>A rate gyro measures the body rate \(\omega\) directly, hundreds of times a second, with good short-term precision. Its errors are what make estimation necessary. The standard error model, per axis, is</p>
+        <div class="eq">\[ \omega_m=\omega+b+n,\qquad \dot b=n_u \]</div>
+        <p>where \(b\) is the <dfn data-term="gyro-bias">bias</dfn>, a slowly wandering offset in rad/s; \(n\) is white rate noise; and \(n_u\) is the small noise that drives the bias's random walk. Integrate \(\omega_m\) alone to get an angle and the bias integrates to a ramp while the white noise integrates to a random walk, so the attitude error grows as</p>
+        <div class="eq">\[ \delta\theta(t)\approx b\,t+\mathrm{ARW}\sqrt{t} \]</div>
+        <p>ARW, the angle random walk, is the white-noise density, quoted in deg/√h. The two terms are equal at \(t=(\mathrm{ARW}/b)^2\). For a 10 deg/h bias, a modest figure for a small-satellite gyro, and an ARW of 0.1 deg/√h <span class="tag tag-illustrative">Illustrative</span>, that is \((0.1/10)^2\) h \(=10^{-4}\) h, about 0.36 s, so the bias ramp dominates almost at once. Only a very stable gyro is noise-limited for long: with the same ARW, a 0.01 deg/h bias would take 100 h to catch up <span class="tag tag-derived">Derived</span>. The 10 deg/h bias alone carries the estimate past the project's 2° pointing band after \(2^\circ/(10\ \text{deg/h})=0.2\) h \(=720\) s, twelve minutes <span class="tag tag-derived">Derived</span>.</p>
+        <p>The simulator's sensor extension is harsher. Its gyro bias is <span class="calc" data-calc="bias-vec">[0.02, −0.015, 0.01] deg/s</span>, which is <span class="calc" data-calc="bias-degh">72 deg/h</span> on the x axis <span class="tag tag-extension">Extension</span>; unaided, that alone would cross 2° in <span class="calc" data-calc="bias-t2">100 s</span> <span class="tag tag-derived">Derived</span>. The filters below therefore have to <em>estimate</em> the bias, not just average the noise. Its white noise, <span class="calc" data-calc="gyro-sigma">σ = 0.01 deg/s</span> per 0.01 s sample, corresponds to an ARW of <span class="calc" data-calc="gyro-arw">0.06 deg/√h</span> <span class="tag tag-derived">Derived</span>.</p>
+        <p>Most small-satellite gyros are MEMS devices. A tiny proof mass is driven to vibrate along one axis; when the body rotates, the Coriolis acceleration \(2\,\omega\times v_{rel}\) pushes the mass along a perpendicular axis, where a capacitive pick-off reads the motion. Rotating-frame kinematics and the Coriolis term are typical content of a kinematics and dynamics subject <span class="tag tag-typical">Typical content</span>.</p>
+        <p>The samples also have a software path. Before anything else, the analogue-to-digital converter rounds each reading to a step \(\Delta\), adding quantisation noise of variance \(\Delta^2/12\); that model is typical content of a computer architecture subject <span class="tag tag-typical">Typical content</span>. Then the readings must reach the estimator. The single-producer, single-consumer ring buffer of the Data Structures notes is the standard hand-off from a sensor interrupt to the estimator task, and their constant-time running-sum window gives a moving-average prefilter at O(1) per sample <span class="tag tag-extension">Extension</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ absolute -->
+    <section id="absolute" aria-labelledby="absolute-title">
+      <h2 id="absolute-title">Absolute sensors</h2>
+      <div class="prose">
+        <p>A gyro tells you how fast you are turning; an absolute sensor tells you where you are pointing. Three families dominate small spacecraft.</p>
+        <ul>
+          <li><strong>Star trackers</strong> photograph the sky, match the star pattern against a catalogue and output a full attitude quaternion. They are the most accurate (a few arcseconds is common) but slow (a few to ten updates a second), they need a "lost in space" solution at start-up, and the Sun or the Earth in the field of view blinds them <span class="tag tag-illustrative">Illustrative</span>.</li>
+          <li><strong>Coarse sun sensors</strong> are photodiodes or small solar cells. A cell whose normal \(\hat n\) makes angle \(\theta\) with the Sun direction \(\hat s\) gives a current of roughly
+            \(I=I_0\max(0,\cos\theta)=I_0\max(0,\ \hat n\cdot\hat s)\),
+            so a handful of cells on different faces give the Sun vector in body axes. They are cheap and robust, good to a degree or so <span class="tag tag-illustrative">Illustrative</span>.</li>
+          <li><strong>Magnetometers</strong> measure the local magnetic field vector with Hall-effect elements or magnetoresistive bridges, for comparison with a model of the Earth's field.</li>
+        </ul>
+        <p>A Sun or field direction is one unit vector, and one direction fixes only two of the three attitude angles: rotation <em>about</em> that direction stays invisible. Two non-parallel directions (the Sun and the field, say) fix the attitude completely. A star tracker sees many stars at once, so it delivers the whole quaternion on its own. Each sensor therefore gives either a vector measurement or a full attitude measurement, and the estimator must know which.</p>
+        <p>The sensing elements sit squarely in the Electromechanics notes, which is why this is the one link in this module tagged direct rather than extension: photodiodes, Hall-effect sensors, the Wheatstone bridge, Gray-code absolute encoders, slotted incremental encoders and tachogenerators all appear there. The notes also explain why the project's controllers take rate from a gyro instead of differencing the attitude: a differentiator's gain rises in proportion to frequency, so it amplifies exactly the high-frequency noise you least want in a torque command.</p>
+        <p>Accuracy is a budget, not a single number. Mounting misalignment, thermal distortion and sensor noise add up, and the Design of Machine Elements notes give the two ways to add them, as a tolerance stack-up <span class="tag tag-extension">Extension</span>:</p>
+        <div class="eq">\[ e_{\text{worst}}=\sum_i e_i,\qquad e_{\text{RSS}}=\sqrt{\textstyle\sum_i e_i^2}\quad\text{(only for independent contributions)} \]</div>
+        <p>Sensor mounts in low-expansion materials, and non-magnetic alloys near a magnetometer, are typical content of an engineering materials subject <span class="tag tag-typical">Typical content</span>. Star-tracker image processing (finding star centroids and identifying the pattern) is a natural home for the convolutional networks of the Deep Learning notes, whose translation equivariance suits star fields <span class="tag tag-extension">Extension</span>. And when three redundant sensors vote two out of three, the same notes give the reliability, \(R=3p^2-2p^3\): better than one sensor only when \(p&gt;0.5\), and no help at all if all three fail the same way.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ dead-reckoning -->
+    <section id="dead-reckoning" aria-labelledby="dead-reckoning-title">
+      <h2 id="dead-reckoning-title">Dead reckoning and drift</h2>
+      <div class="prose">
+        <p>Integrating a rate to get an angle is <dfn data-term="dead-reckoning">dead reckoning</dfn>. Navigators did it long before gyros: heading, speed and elapsed time give a position, every error in heading or speed accumulates, and the error keeps growing until a fix (a landmark, a radio bearing, a star sight) resets it. Dead reckoning, the 1-in-60 rule and position fixing are typical content of an aviation navigation subject <span class="tag tag-typical">Typical content</span>, and the analogy with gyro-only attitude is exact.</p>
+        <p>For attitude, the propagation step is the project's own kinematic equation from <a href="m03-dynamics.html">module 03</a>, run on measured rates with the bias estimate removed:</p>
+        <div class="eq">\[ \dot{\hat q}=\tfrac12\,\hat q\otimes\begin{bmatrix}0\\ \omega_m-\hat b\end{bmatrix} \]</div>
+        <p>With no absolute fix, nothing ever pulls the estimate back. The bias ramp grows linearly. The random walk grows as \(\sqrt t\), more slowly but without bound, and it remains even if the bias were known perfectly. With a fix every \(N\) seconds the error can no longer grow beyond what accumulates between two fixes, plus the error of the fix itself. In the widget below the fixes go through a small Kalman filter that also learns the bias, so after a few fixes the error between them shrinks to hundredths of a degree.</p>
+        <p>Watch the units. A 10 deg/h bias is 2,160 times smaller than the 6 deg/s safe-mode entry threshold, and it is irrelevant to the mode logic. But pointing is an integral, and the integral of a small constant becomes large given enough time: in twelve minutes that bias consumes the whole 2° pointing budget <span class="tag tag-derived">Derived</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-gyro-drift" aria-labelledby="w-gyro-drift-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-gyro-drift-title">Gyro-only drift</h3>
+          <p class="widget-try"><strong>Try:</strong> set the bias to 10 deg/h with no fixes, then raise the angle random walk, then switch on star-tracker fixes and lengthen the interval between them. <strong>Notice:</strong> the bias makes the error a straight ramp that crosses 2° at 12 minutes; the random walk adds a wandering spread; fixes stop the growth entirely, and after a few the filter has learned the bias.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>One axis, stationary truth (\(\theta=0\)), gyro sampled every 0.5 s with a constant bias and white rate noise. Fixes use the site's star-tracker noise and a two-state filter from <code>ADCS.est.createAxisKF</code>. The dashed envelope is \(b\,t+\mathrm{ARW}\sqrt t\) (one standard deviation).</p>
+          <span class="tags"><span class="tag tag-extension">Extension</span><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ complementary -->
+    <section id="complementary" aria-labelledby="complementary-title">
+      <h2 id="complementary-title">Complementary filter</h2>
+      <div class="prose">
+        <p>The gyro is good over short times and bad over long ones; an absolute sensor is the reverse, noisy from sample to sample but free of drift. A <dfn data-term="complementary-filter">complementary filter</dfn> takes the high frequencies from one and the low frequencies from the other:</p>
+        <div class="eq">\[ \hat\theta_k=\alpha\,\big(\hat\theta_{k-1}+\omega_m\,\Delta t\big)+(1-\alpha)\,\theta_{ref} \]</div>
+        <p>Each step it propagates with the gyro, then nudges the result a fraction \(1-\alpha\) of the way toward the reference. The nudges act as a first-order low-pass filter on the reference and a high-pass filter on the gyro, with the crossover time constant</p>
+        <div class="eq">\[ \tau=\frac{\alpha\,\Delta t}{1-\alpha} \]</div>
+        <p>where \(\Delta t\) is the interval between reference updates. Faster than \(\tau\) the filter follows the gyro; slower than \(\tau\) it follows the reference. A large \(\alpha\) trusts the gyro (smooth, but slow to correct drift); a small \(\alpha\) trusts the reference (and follows its noise).</p>
+        <p>A light aircraft's attitude indicator does this with hardware. Its gyro holds the horizon over short times, and a slow erection mechanism of pendulous vanes pulls it back toward gravity over minutes. Resetting the heading indicator to the compass every 10 to 15 minutes is the same idea for heading: a bias correction against an absolute reference. These instruments are typical content of a light aircraft systems subject <span class="tag tag-typical">Typical content</span>. The Intelligent Systems notes contain the same filter in another guise: the temporal-difference running average \(\bar x\leftarrow(1-\alpha)\bar x+\alpha x\) is exponential smoothing, a first-order filter with a memory of about \(1/\alpha\) samples <span class="tag tag-extension">Extension</span>.</p>
+        <p>A plain complementary filter has one flaw: a constant gyro bias leaves a constant error of about \(b\,\tau\). The fix is a second state, the bias estimate, updated from the residual \(r=\theta_{ref}-\hat\theta\) whenever a reference arrives and subtracted from \(\omega_m\) before integrating:</p>
+        <div class="eq">\[ \hat b\leftarrow\hat b-k_b\,r \]</div>
+        <p>The simulator's complementary option does exactly this on all three axes, with the error quaternion as the residual: <span class="calc" data-calc="cf-gains">\(k_c=0.2\) per star-tracker update, so \(\alpha=0.8\), and \(k_b=0.05\)</span> <span class="tag tag-extension">Extension</span>. At the star tracker's 5 Hz that gives <span class="calc" data-calc="cf-tau">\(\tau=0.8\) s</span> <span class="tag tag-derived">Derived</span>, and the choice \(k_b=k_c^2/(4\Delta t)\) makes the two-state loop critically damped <span class="tag tag-derived">Derived</span>. You can compare a complementary filter with the Kalman filter in the playground two sections below.</p>
+        <p>The inner ear makes the case for fusion vividly. The semicircular canals behave roughly like a high-pass filter on the roll rate, \(\omega_{felt}/\omega=\tau s/(\tau s+1)\) with \(\tau\) of several seconds, and a change in rate below about 2 deg/s goes unnoticed. A slow roll into a bank is therefore never felt, and a brisk roll back to level is felt in full, so a pilot who is level <em>feels</em> banked the other way: "the leans". These figures are typical content of an aviation-medicine subject <span class="tag tag-typical">Typical content</span>; the cure is the one this section describes, an absolute reference (the outside horizon or the attitude indicator) fused with the rate sense.</p>
+      </div>
+
+      <figure class="widget" id="w-vestibular" aria-labelledby="w-vestibular-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-vestibular-title">Sensor fusion à la vestibular system</h3>
+          <p class="widget-try"><strong>Try:</strong> watch the felt bank with the defaults, then speed up the roll-in until it crosses the detection threshold; finally switch on the outside horizon. <strong>Notice:</strong> a slow roll into 15° of bank is never felt, the quick roll-out leaves a false bank the other way, and fusing an absolute reference pulls the estimate back to the truth within a few time constants.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>A first-order high-pass "canal" on roll rate, \(\tau\) = 6 s by default, with a dead zone at the detection threshold; the felt rate is integrated to a felt bank. The fused estimate adds a correction toward the reference, \(\dot{\hat\varphi}=\omega_{felt}+(\varphi_{ref}-\hat\varphi)/\tau_c\). A teaching model, not a physiological one.</p>
+          <span class="tags"><span class="tag tag-analogy">Analogy</span><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-typical">Typical content</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ bayes -->
+    <section id="bayes" aria-labelledby="bayes-title">
+      <h2 id="bayes-title">From Bayes' rule to the Kalman filter</h2>
+      <div class="prose">
+        <p>A complementary filter needs hand-tuned gains. A <dfn data-term="kalman-filter">Kalman filter</dfn> computes them from the noise models, and its structure falls straight out of Bayes' rule.</p>
+        <p>Treat the state \(x_k\) (attitude error and bias) as uncertain and keep a probability distribution over it, the <em>belief</em>. Each step has two halves:</p>
+        <div class="eq">\[ \text{predict:}\quad p(x_k\mid z_{1:k-1})=\int p(x_k\mid x_{k-1})\,p(x_{k-1}\mid z_{1:k-1})\,dx_{k-1} \]</div>
+        <div class="eq">\[ \text{update:}\quad p(x_k\mid z_{1:k})\ \propto\ p(z_k\mid x_k)\,p(x_k\mid z_{1:k-1}) \]</div>
+        <p>The prediction pushes the belief through the dynamics (here, the gyro integration), which spreads it out. The update is Bayes' rule with the sensor model as the likelihood, which sharpens it. Two assumptions turn this into a recursion instead of a computation over the whole history: the <strong>Markov property</strong> (\(x_k\) depends only on \(x_{k-1}\)) and <strong>conditional independence</strong> of each measurement given the state. Drawn as a Bayes net, the filter is the chain \(x_{k-1}\to x_k\to z_k\), and the missing arcs are exactly those assumptions.</p>
+        <p>The Intelligent Systems notes teach every ingredient: Bayes' rule, marginalisation, Bayes nets whose missing arcs encode conditional independence, and the Markov property. They do not teach filtering; the recursion is the extension <span class="tag tag-extension">Extension</span>.</p>
+        <p>When every distribution is Gaussian and every model linear, the recursion has a closed form. In one dimension, a Gaussian prior \(\mathcal N(x^-,P^-)\) multiplied by a Gaussian likelihood \(\mathcal N(z,R)\) is another Gaussian, with</p>
+        <div class="eq">\[ \hat x=x^-+K\,(z-x^-),\qquad K=\frac{P^-}{P^-+R},\qquad P=(1-K)\,P^- \]</div>
+        <p>That is the scalar Kalman filter. The gain \(K\) is the fraction of the surprise \(z-x^-\) that you believe: near 1 when the prior is vague (\(P^-\gg R\)), near 0 when the sensor is poor (\(R\gg P^-\)). The posterior variance \(P\) is smaller than both \(P^-\) and \(R\): combining two independent pieces of evidence always helps.</p>
+        <p>Two more views help. The Supervised Learning notes show that ridge regression is the maximum a posteriori estimate under a Gaussian prior. The Kalman update minimises the same kind of objective, a measurement misfit weighted by \(R^{-1}\) plus a prior misfit weighted by \((P^-)^{-1}\), so it is ridge-style regularised least squares with the prior covariance as the regulariser <span class="tag tag-extension">Extension</span>. Gaussian noise, variances and covariance matrices, the filter's language, are typical content of an engineering mathematics subject; state observers (a model copy corrected by \(L(y-C\hat x)\)) and the separation principle are typical content of a control systems subject <span class="tag tag-typical">Typical content</span>.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================ kalman -->
+    <section id="kalman" aria-labelledby="kalman-title">
+      <h2 id="kalman-title">A Kalman-style attitude filter</h2>
+      <div class="prose">
+        <p>The simulator's Kalman option applies this per axis, with a two-element state: the small attitude error \(\delta\theta\) (rad) and the gyro bias error \(\delta b\) (rad/s). Between star-tracker samples the gyro propagates the quaternion estimate, and the covariance grows:</p>
+        <div class="eq">\[ \begin{aligned} P^-&amp;=F\,P\,F^\mathsf{T}+Q,\\ F&amp;=\begin{bmatrix}1&amp;-\Delta t\\0&amp;1\end{bmatrix} \end{aligned} \]</div>
+        <p>\(F\) says the attitude error grows by \(-\Delta t\) times the bias error each step (the bias estimate is subtracted from the measured rate), and \(Q\) holds the gyro noise, \((\sigma_g\Delta t)^2\) on the angle, plus a slow bias random walk. When a star-tracker sample \(q_m\) arrives, the residual is the small rotation from the estimate to the measurement,</p>
+        <div class="eq">\[ r=2\,\mathrm{vec}\big(\hat q^{*}\otimes q_m\big) \]</div>
+        <p>and, with \(H=[1\ \ 0]\) and the measurement variance \(R=\sigma_{st}^2\), the standard update applies to each axis:</p>
+        <div class="eq">\[ \begin{aligned} K&amp;=P^-H^\mathsf{T}\big(HP^-H^\mathsf{T}+R\big)^{-1}\\ x&amp;=x^-+K\,(z-Hx^-)\\ P&amp;=(I-KH)\,P^- \end{aligned} \]</div>
+        <p>The correction is applied <em>multiplicatively</em>: the estimate is turned through the small rotation vector \(\delta\theta\) (the three axes' corrections stacked) and then renormalised,</p>
+        <div class="eq">\[ \begin{aligned} \hat q&amp;\leftarrow\hat q\otimes\delta q\\ \delta q&amp;=\big[\cos\tfrac{\lVert\delta\theta\rVert}{2},\ \sin\tfrac{\lVert\delta\theta\rVert}{2}\,\hat e\big]\\ &amp;\approx\big[1,\ \tfrac12\delta\theta\big] \end{aligned} \]</div>
+        <p>where \(\hat e=\delta\theta/\lVert\delta\theta\rVert\) is the axis of the correction, so the quaternion stays a unit quaternion, and the bias estimate absorbs \(\delta b\). (The half angle is the site's small-rotation convention, \(q\approx[1,\ \theta/2]\), which also put the factor 2 in the residual.) This is the idea of the <dfn data-term="mekf">multiplicative extended Kalman filter</dfn> (MEKF), the standard spacecraft attitude filter, simplified here to three decoupled axes with no cross-covariance. The simplification is reasonable near rest, and it is stated so that nobody mistakes this filter for the full MEKF <span class="tag tag-extension">Extension</span>.</p>
+        <p>Gyro error models, strapdown propagation, Kalman predict and update steps and integrated satellite/inertial navigation are typical content of an aviation navigational systems subject <span class="tag tag-typical">Typical content</span>; the spacecraft filter is the same machine with a star tracker in place of satellite fixes.</p>
+        <p>There is a deeper symmetry. In <a href="m05-control.html#lqr">module 05</a> the LQR gains came from a Riccati equation solved backward in time, as dynamic programming. The covariance recursion above is a Riccati recursion too, run <em>forward</em> in time: the Kalman filter is the dual of the LQR <span class="tag tag-extension">Extension</span>. The Algorithms notes teach dynamic programming and the principle of optimality on discrete problems. Applied to a quadratic value function, the same principle gives LQR, and with it most of the filter's structure <span class="tag tag-extension">Extension</span>.</p>
+      </div>
+
+      <figure class="widget" id="w-kalman-1d" aria-labelledby="w-kalman-1d-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-kalman-1d-title">One-axis Kalman playground</h3>
+          <p class="widget-try"><strong>Try:</strong> raise the absolute sensor's noise, then lower its rate; then mistune the filter with the Q and R scales; finally switch the complementary filter's bias correction on and off. <strong>Notice:</strong> the gain \(K_1\) drops as the sensor gets worse and the uncertainty \(\sqrt{P_{11}}\) saw-tooths between fixes; a filter told the wrong noise levels does worse; without bias correction the complementary filter carries a steady offset of about \(b\,\tau\).</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>True angle \(\theta(t)=10^\circ\sin(2\pi t/60)\), 120 s at 0.02 s steps, seeded noise. The Kalman filter is <code>ADCS.est.createAxisKF</code>; the complementary filter blends at each absolute sample with weight \(1-\alpha\), with optional bias correction \(k_b=(1-\alpha)^2/(4\Delta t)\).</p>
+          <span class="tags"><span class="tag tag-extension">Extension</span><span class="tag tag-illustrative">Illustrative</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ thresholds -->
+    <section id="thresholds" aria-labelledby="thresholds-title">
+      <h2 id="thresholds-title">Noise meets thresholds</h2>
+      <div class="prose">
+        <p>Now put the filters in the loop. The simulator's sensor extension runs T03 (the safe-mode upset with a fault from 45 to 60 s) with the controller and the mode logic fed the <em>estimate</em> instead of the truth. The requirement checks still use the true state.</p>
+        <p>With the default sensors (gyro σ 0.01 deg/s per sample, star tracker σ 0.02° at 5 Hz) <span class="tag tag-extension">Extension</span>, the behaviour is indistinguishable from the true-state run: the same six transitions at nearly the same times. On the T01 slew the estimation error over the last 20 s has an RMS of <span class="calc" data-calc="rms-kalman">about 0.008°</span> for the Kalman-style filter, <span class="calc" data-calc="rms-complementary">about 0.011°</span> for the complementary filter and <span class="calc" data-calc="rms-noisy">about 0.030°</span> for the raw, sample-and-hold star tracker <span class="tag tag-derived">Derived</span>. All three sit far inside every threshold.</p>
+        <p>Raise the gyro noise to σ = 0.3 deg/s (preset ESTNOISY, which also raises the star-tracker noise to 0.2°) and the picture changes completely <span class="tag tag-extension">Extension</span>. The noise now sets a floor under the <em>measured</em> rate. The norm of three independent noise components with σ = 0.3 deg/s averages about 0.48 deg/s, and a single sample falls below 0.5 deg/s only about 57% of the time <span class="tag tag-derived">Derived</span>. The SAFE_DETUMBLE exit needs 200 consecutive samples below 0.5 deg/s, and the chance of that is about</p>
+        <div class="eq">\[ 0.57^{200}\approx10^{-49} \]</div>
+        <p>So the craft never leaves SAFE_DETUMBLE <span class="tag tag-derived">Derived</span>. Detumble is pure rate damping, with no attitude term: the initial tumble carries the craft about 46° from the target, and with no return to NOMINAL nothing ever brings it back, so by 120 s the true attitude is about 49° off in the reference run <span class="tag tag-derived">Derived</span>.</p>
+        <p>The requirement badges then disagree in an instructive way. REQ-F1 ("stabilize angular rates below 0.5 deg/s after safe-mode entry") <strong>passes</strong>, because its check uses the true rate, which fell below 0.5 deg/s within a few seconds. REQ-F2 <strong>fails</strong>, because the craft never returned to NOMINAL. Requirement checks on the truth and mode logic on the estimate can disagree whenever the estimate is worse than the margin built into the thresholds.</p>
+        <p>Two remedies follow, and both matter. <strong>Filtering:</strong> give the mode logic a smoothed rate (averaging \(N\) samples divides white noise by \(\sqrt N\)) or the filter's own rate estimate. <strong>Hysteresis:</strong> keep the exit threshold well above the noise floor, and require the condition for a time long compared with the noise correlation, which is what the timers of <a href="m08-safe-mode.html#hysteresis">module 08</a> do.</p>
+      </div>
+
+      <figure class="widget" id="w-full-sim" aria-labelledby="w-full-sim-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-full-sim-title">Full-simulation extension</h3>
+          <p class="widget-try"><strong>Try:</strong> switch the feedback from truth to noisy, complementary and Kalman with the default sensors, then press the lock-up demo. <strong>Notice:</strong> with good sensors the mode timeline barely changes; in the demo the measured rate never stays under 0.5 deg/s, the timeline stays red, and REQ-F1 passes on the true rate while REQ-F2 fails.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Preset T03 (PID, safe mode on, fault 45–60 s) run live with <code>ADCS.sim.run</code> and the chosen <code>sensors</code> settings. "Used" is what the controller and mode logic saw; requirement checks use the true state.</p>
+          <span class="tags"><span class="tag tag-extension">Extension</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- ============================================================ fdir -->
+    <section id="fdir" aria-labelledby="fdir-title">
+      <h2 id="fdir-title">Residuals and fault detection</h2>
+      <div class="prose">
+        <p>Where does the project's fault flag come from? In the simulator it is injected: a window from 45 to 60 s in T03 <span class="tag tag-site">Site default</span>. On a real spacecraft a <dfn data-term="fdir">fault detection, isolation and recovery</dfn> layer raises it, and estimation is how. The core tool is the <strong>residual</strong>: compare two quantities that should agree and flag a persistent mismatch. The commanded wheel torque against the measured wheel acceleration; two redundant gyros against each other; the star-tracker attitude against the gyro-propagated one, which is exactly the filter's innovation \(z-Hx^-\).</p>
+        <p>The Electromechanics notes describe a hardware residual detector, the residual-current device, which compares the outgoing and returning current and trips on an imbalance. Its blind spot is every residual's blind spot: a fault that affects both signals equally cannot be seen. The Unsupervised Learning notes add why residuals help a detector: an anomaly detector on raw telemetry finds magnitude anomalies, and the residual turns a <em>contextual</em> anomaly (a modest rate that is wrong given zero commanded torque) into a magnitude one it can see <span class="tag tag-extension">Extension</span>. Outlier detection is one of the mining functions listed in the Data Mining notes <span class="tag tag-extension">Extension</span>.</p>
+        <p>Rare faults make detection a base-rate problem. Suppose a detector catches 99% of real faults, raises a false alarm on 1% of healthy checks, and the prior probability of a fault at any one check is \(10^{-4}\). Bayes' rule gives</p>
+        <div class="eq">\[ P(\text{fault}\mid\text{alarm})=\frac{0.99\times10^{-4}}{0.99\times10^{-4}+0.01\times(1-10^{-4})}\approx0.98\% \]</div>
+        <p>Ninety-nine alarms in a hundred are false <span class="tag tag-derived">Derived</span>. The Intelligent Systems notes call this the base-rate error: a sensitive test for a rare condition can still give mostly false positives. The cure is more evidence. If consecutive alarms were independent, each one would multiply the odds by the likelihood ratio \(0.99/0.01=99\): two alarms would give about 50%, three about 99% <span class="tag tag-derived">Derived</span>. The project's 0.5 s fault persistence <span class="tag tag-project">Project</span> is this idea in time: the fault must be present continuously for 50 steps before the mode logic acts. Real false alarms are <em>not</em> independent (a vibration or a noise burst lasts), so persistence works because it outlasts the bursts, not by naive multiplication.</p>
+        <p>Redundancy is the other cure. Three independent sensors voting two out of three succeed with probability \(R=3p^2-2p^3\), which is 0.972 at \(p=0.9\) <span class="tag tag-derived">Derived</span>; voting helps only when \(p&gt;0.5\), and it cannot repair a common-mode fault. <a href="m08-safe-mode.html#faults">Module 08</a> takes the fault flag from here into the mode logic.</p>
+      </div>
+
+      <figure class="widget" id="w-base-rate" aria-labelledby="w-base-rate-title">
+        <figcaption class="widget-head">
+          <span class="widget-kicker">Interactive</span>
+          <h3 class="widget-title" id="w-base-rate-title">Fault-alarm base rate</h3>
+          <p class="widget-try"><strong>Try:</strong> start at the defaults, then raise the prior, then lower the false-alarm rate, then require more consecutive alarms. <strong>Notice:</strong> with a rare fault, one alarm means little however good the detector; the false-alarm rate matters far more than the detection rate, and a few independent confirmations change everything.</p>
+        </figcaption>
+        <div class="widget-body">
+          <div class="widget-controls"></div>
+          <div class="widget-output"></div>
+        </div>
+        <div class="widget-foot">
+          <p>Bayes' rule with \(P(\text{alarm}\mid\text{fault})=d\) and \(P(\text{alarm}\mid\text{healthy})=f\); \(k\) alarms are treated as independent, which real alarms are not.</p>
+          <span class="tags"><span class="tag tag-illustrative">Illustrative</span><span class="tag tag-derived">Derived</span></span>
+        </div>
+      </figure>
+    </section>
+
+    <aside class="sim-links" aria-labelledby="sim-links-title">
+      <h2 id="sim-links-title">Try it in the simulator</h2>
+      <ul data-auto="simlinks"></ul>
+    </aside>
+
+    <section id="check" class="quiz" aria-labelledby="check-title">
+      <h2 id="check-title">Check your understanding</h2>
+      <p>Predict the answer first, then check it.</p>
+      <div id="quiz"></div>
+    </section>
+
+    <p class="in-short"><strong>In short:</strong> the project assumed perfect knowledge of the state; a real attitude system has to estimate it. A gyro is precise but drifts; an absolute sensor is unbiased but noisy and slow. Fusing them, with a complementary filter or a Kalman-style filter derived from Bayes' rule, bounds the error and learns the bias. With good sensors nothing in the mission changes. With noisy ones the safe-mode exit threshold meets the noise floor and the craft can lock up in SAFE_DETUMBLE, which is why filtering and hysteresis have to be designed together.</p>
+
+    <section id="provenance" class="provenance">
+      <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
+    </section>
+
+    <nav class="module-pager" aria-label="Previous and next module"></nav>
+  </article>
+</main>
+
+<div data-chrome="footer"></div>
+</body>
+</html>

@@ -1,0 +1,33 @@
+/*
+ * m05.css: Module 05, control design (package P4).
+ * Everything is scoped under body[data-page="m05"]; shared components keep their own styles.
+ */
+
+body[data-page="m05"] .in-short {
+  max-width: 72ch;
+  margin-block: var(--s6) var(--s4);
+  padding-inline-start: var(--s3);
+  border-inline-start: 3px solid var(--accent);
+}
+
+/* plots, tables and readouts stacked in a widget output */
+body[data-page="m05"] .widget-output > .plot,
+body[data-page="m05"] .widget-output > div > .plot,
+body[data-page="m05"] .tab-panel > div > .plot,
+body[data-page="m05"] .widget-output > .grid-2 { margin-block-end: var(--s4); }
+body[data-page="m05"] .widget-output > .scroll-x,
+body[data-page="m05"] .widget-output > div > .scroll-x { margin-block-end: var(--s3); }
+body[data-page="m05"] .widget-output > .status-line { margin-block-end: var(--s3); }
+
+/* status lines that start with a pass/fail badge */
+body[data-page="m05"] .w52-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); color: var(--text); }
+
+/* W5.3: tab panels */
+body[data-page="m05"] .w53-panel { padding-block-start: var(--s3); }
+body[data-page="m05"] .w53-panel > .widget-controls { margin-block-end: var(--s3); }
+
+/* W5.4: the Bellman part */
+body[data-page="m05"] .w54-h { margin-block: var(--s6) var(--s2); padding-block-start: var(--s4); border-top: 1px solid var(--border); font-size: var(--fs-base); }
+
+/* W5.5: verdict line */
+body[data-page="m05"] .w55-winner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin-block: 0 var(--s3); }
