@@ -1,0 +1,104 @@
+/*
+ * resources.css: the further-reading page (resources.html). Every rule is scoped under
+ * body[data-page="resources"]. The cards themselves are shared (.rd-* in components.css).
+ */
+
+body[data-page="resources"] .res-section { margin-block-start: var(--s6); }
+body[data-page="resources"] .res-section > h2 { margin-block-start: 0; }
+
+/* ================================================================ header totals */
+body[data-page="resources"] .res-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--s2);
+  margin-block: var(--s2) 0;
+  font-size: var(--fs-md);
+  color: var(--text-2);
+}
+body[data-page="resources"] .res-stat strong { color: var(--text); font-variant-numeric: tabular-nums; }
+body[data-page="resources"] .res-sep { color: var(--border-strong); }
+
+/* ================================================================ three facts */
+body[data-page="resources"] .res-facts {
+  display: grid;
+  gap: var(--s3);
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 900px) {
+  body[data-page="resources"] .res-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+body[data-page="resources"] .res-fact { margin: 0; padding: var(--s3) var(--s4); }
+body[data-page="resources"] .res-fact-title { margin: 0 0 var(--s1); font-size: var(--fs-base); }
+body[data-page="resources"] .res-fact p { margin: 0; font-size: var(--fs-sm); color: var(--text-2); }
+
+/* ================================================================ controls */
+body[data-page="resources"] .res-how { max-width: 90ch; margin-block-end: var(--s3); font-size: var(--fs-sm); color: var(--text-2); }
+body[data-page="resources"] .res-controls { display: grid; gap: var(--s3); margin-block-end: var(--s3); }
+body[data-page="resources"] .res-search input[type="search"] { width: 100%; font-size: var(--fs-base); }
+body[data-page="resources"] .res-filters { margin: 0; }
+body[data-page="resources"] .res-filters > summary .count { font-weight: 500; color: var(--text-2); font-size: var(--fs-sm); }
+body[data-page="resources"] .res-filter-body { display: grid; gap: var(--s4); padding-block-start: var(--s2); }
+body[data-page="resources"] .res-filter-row { display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); align-items: start; }
+body[data-page="resources"] .res-filter-row .select-field select,
+body[data-page="resources"] .res-filter-row select { width: 100%; }
+@media (min-width: 900px) {
+  body[data-page="resources"] .res-filter-row { grid-template-columns: minmax(16rem, 1fr) auto auto; gap: var(--s4) var(--s5); }
+}
+body[data-page="resources"] .field-help-inline { font-weight: 400; color: var(--text-2); font-size: var(--fs-xs); }
+body[data-page="resources"] .res-type-field { min-width: 0; }
+body[data-page="resources"] .res-types { display: flex; flex-wrap: wrap; gap: var(--s2); }
+body[data-page="resources"] .res-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  min-height: var(--hit);
+  padding: 0 0.85em 0 0.6em;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+}
+body[data-page="resources"] .res-check:hover { background: var(--surface-2); }
+body[data-page="resources"] .res-check:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 650; }
+body[data-page="resources"] .res-check input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--accent); }
+body[data-page="resources"] .res-check svg { width: 16px; height: 16px; flex: none; color: var(--text-2); }
+body[data-page="resources"] .res-check .count { color: var(--text-2); font-weight: 400; }
+/* Phones: two plain columns of checkboxes instead of pills, so the ten kinds take five rows. */
+@media (max-width: 599px) {
+  body[data-page="resources"] .res-types { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--s2); }
+  body[data-page="resources"] .res-check,
+  body[data-page="resources"] .res-check:has(input:checked) { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  body[data-page="resources"] .res-check svg { display: none; }
+}
+
+/* ================================================================ toolbar, empty state, BibTeX box */
+body[data-page="resources"] .res-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s2) var(--s4);
+  margin-block-end: var(--s3);
+}
+body[data-page="resources"] .res-status { flex: 1 1 18rem; align-self: center; }
+body[data-page="resources"] .res-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s2) var(--s3); }
+body[data-page="resources"] .res-tools .field { flex-direction: row; align-items: center; gap: var(--s2); }
+body[data-page="resources"] .res-bib-out { display: grid; gap: var(--s1); margin-block-end: var(--s3); }
+body[data-page="resources"] .res-bib-out[hidden] { display: none; }
+body[data-page="resources"] .res-bib-out textarea { font-family: var(--font-mono); font-size: var(--fs-xs); }
+body[data-page="resources"] .res-empty {
+  margin-block: var(--s3);
+  padding: var(--s4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r2);
+  background: var(--surface);
+  text-align: center;
+}
+body[data-page="resources"] .res-empty p { margin: 0; }

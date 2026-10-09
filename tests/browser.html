@@ -93,13 +93,16 @@
 <script defer src="../assets/js/adcs-ui.js"></script>
 <script defer src="../assets/js/adcs-plot.js"></script>
 <script defer src="../assets/js/adcs-wire.js"></script>
+<script defer src="../assets/js/adcs-resources.js"></script>
+<script defer src="../assets/js/adcs-reading.js"></script>
 <script defer src="engine.test.js"></script>
+<script defer src="resources.test.js"></script>
 </head>
 <body data-page="tests">
 <a class="skip-link" href="#main">Skip to the results</a>
 <main id="main">
   <h1>Engine tests</h1>
-  <p>This page loads the shared scripts and runs the same engine assertions as <code>node tests/run-node.js</code>: the reference values, the frame and quaternion conventions, the safe-mode logic, the Monte Carlo campaign and the performance budgets.</p>
+  <p>This page loads the shared scripts and runs the same engine assertions as <code>node tests/run-node.js</code>: the reference values, the frame and quaternion conventions, the safe-mode logic, the Monte Carlo campaign and the performance budgets, plus the checks on the further-reading list (<code>tests/resources.test.js</code>).</p>
   <div class="summary">
     <span id="verdict" class="verdict running">Running…</span>
     <span id="counts" class="muted" aria-live="polite">Starting the tests.</span>
@@ -148,7 +151,9 @@
       ['assets/js/adcs-data.js', 'ADCS.data', !!A.data],
       ['assets/js/adcs-ui.js', 'ADCS.ui', !!A.ui],
       ['assets/js/adcs-plot.js', 'ADCS.plot', !!A.plot],
-      ['assets/js/adcs-wire.js', 'ADCS.wire', !!A.wire]
+      ['assets/js/adcs-wire.js', 'ADCS.wire', !!A.wire],
+      ['assets/js/adcs-resources.js', 'ADCS.resources', !!(A.resources && A.resources.items)],
+      ['assets/js/adcs-reading.js', 'ADCS.reading, ui.renderReading', !!(A.reading && A.ui && A.ui.renderReading)]
     ];
     var scriptFailures = 0;
     shared.forEach(function (s) {

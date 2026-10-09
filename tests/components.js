@@ -393,6 +393,11 @@
     ((m5 && m5.simLinks) || [{ label: 'T03 safe-mode upset and fault', hash: 'preset=T03' }]).forEach(function (s) { sl.appendChild(el('li', null, ui.simLink(s.label, s.hash))); });
     sl.appendChild(el('li', null, ui.simLink('Close the spec gap', { preset: 'T03', gap: 1 })));
 
+    /* ------------------------------------------------ further reading */
+    if (ADCS.reading && ui.renderReading) {
+      ui.renderReading($('demo-reading'), { items: ADCS.reading.forModule('m11').slice(0, 2), headingLevel: 3, showModules: true });
+    }
+
     ui.typeset(document.body);
     ui.linkTerms(document.body);
   });

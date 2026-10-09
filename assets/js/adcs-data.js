@@ -6,7 +6,9 @@
  *   courses      70 subject records {id, name, discipline, kind, evidence, covered, typical,
  *                typicalScope, keyIdeas}.
  *   modules      13 lifecycle modules {id, num, slug, title, short, phase, summary, minutes,
- *                extension, prereqs, objectives, sections, widgets, simLinks}.
+ *                extension, prereqs, objectives, sections, widgets, simLinks}. `sections` lists
+ *                the page's section anchors in order, ending with 'further-reading' (the reading
+ *                list from adcs-resources.js); link-check.js verifies each one exists.
  *   mappings     280 subject → module rows {course, module, strength, tag, concept, section}.
  *   loopBlocks / loopEdges  the landing-page loop diagram (viewBox 0 0 1000 640).
  *   trace, tests the requirement → test traceability and the T01–T06 test labels.
@@ -1084,6 +1086,7 @@
         { id: 'margins', title: 'Margins and derived requirements' },
         { id: 'constraints', title: 'Requirements as constraints' },
         { id: 'peas', title: 'Performance measure first (PEAS)' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W1.1', title: 'Requirement linter', core: true, anchor: 'w-linter' },
@@ -1116,6 +1119,7 @@
         { id: 'dataflow', title: 'One time step as a DAG' },
         { id: 'interfaces', title: 'Interfaces and layering' },
         { id: 'agent', title: 'One specification, several programs' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W2.1', title: 'Live block diagram with signal probes', core: true },
@@ -1151,6 +1155,7 @@
         { id: 'error', title: 'Attitude error and the shortest rotation' },
         { id: 'dcm', title: 'Quaternion → DCM' },
         { id: 'environment', title: 'Where the disturbance comes from' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W3.1', title: 'Gyroscopic coupling explorer', core: true },
@@ -1188,6 +1193,7 @@
         { id: 'stability', title: 'Step size and stability' },
         { id: 'float', title: 'Floating point and timers' },
         { id: 'events', title: 'Locating a threshold crossing' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W4.1', title: 'Euler vs RK4 vs exact', core: true },
@@ -1225,6 +1231,7 @@
         { id: 'bellman', title: 'LQR as dynamic programming' },
         { id: 'saturation', title: 'When linear analysis stops' },
         { id: 'compare', title: 'Comparing controllers' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W5.1', title: 'Single-axis step-response lab', core: true },
@@ -1260,6 +1267,7 @@
         { id: 'allocation', title: 'Clipping vs scaling' },
         { id: 'friction', title: 'Non-idealities' },
         { id: 'hardware', title: 'Hardware extension' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W6.1', title: 'Torque-reaction turntable', core: true },
@@ -1296,6 +1304,7 @@
         { id: 'kalman', title: 'A Kalman-style attitude filter' },
         { id: 'thresholds', title: 'Noise meets thresholds' },
         { id: 'fdir', title: 'Residuals and fault detection' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W7.1', title: 'Gyro-only drift', core: true },
@@ -1333,6 +1342,7 @@
         { id: 'monitor', title: 'A run-time monitor' },
         { id: 'gap', title: 'A specification gap' },
         { id: 'faults', title: 'Where the fault flag comes from' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W8.1', title: 'Live state machine', core: true },
@@ -1370,6 +1380,7 @@
         { id: 'worst', title: 'Worst cases and margins' },
         { id: 'discipline', title: 'Seeds, reproducibility and leakage' },
         { id: 'proof-vs-sampling', title: 'What sampling can and cannot show' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W9.1', title: 'Test-matrix runner', core: true },
@@ -1402,6 +1413,7 @@
         { id: 'concurrency', title: 'Shared state: the torn quaternion' },
         { id: 'testing', title: 'Testing' },
         { id: 'reproducibility', title: 'Reproducibility and tool independence' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W10.1', title: 'Deadline budget', core: true },
@@ -1434,6 +1446,7 @@
         { id: 'mvc', title: 'One model, many views' },
         { id: 'annunciation', title: 'Mode annunciation' },
         { id: 'performance', title: 'Performance budget' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W11.1', title: 'Quaternion-to-pixels pipeline', core: true },
@@ -1466,6 +1479,7 @@
         { id: 'bowtie', title: 'Bow-tie: loss of attitude control' },
         { id: 'lessons', title: 'Lessons from the log' },
         { id: 'scope', title: 'Scope decisions' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W12.1', title: 'Interactive risk matrix', core: true },
@@ -1499,6 +1513,7 @@
         { id: 'learning', title: 'Learning controllers and shields' },
         { id: 'context', title: 'Mission context' },
         { id: 'culture', title: 'Safety culture' },
+        { id: 'further-reading', title: 'Further reading' },
       ],
       widgets: [
         { id: 'W13.1', title: 'Swiss-cheese stack', core: true },

@@ -17,6 +17,15 @@
  * Four-digit years of the 2010s and 2020s outside assets/vendor/ are reported as warnings to review,
  * unless they directly follow the word "seed" (the Monte Carlo seeds of plan §8.3 are not dates).
  *
+ * The further-reading bibliography (assets/js/adcs-resources.js) lists published works by public
+ * authors and organisations. In that file only, a capitalised education-record word that is part
+ * of a publisher's or institution's proper name (such as "<Name> <word> Press" or "<word> of
+ * <Place>") names that public body rather than a study record, and years in its metadata fields
+ * (id, title, year, venue, url and checked) are publication years, not study dates. Years in the
+ * free-text why and concepts strings are still reported, unless that line or the comment line
+ * just above it says "privacy-scan: publication years" (a reviewed exception). Every other rule,
+ * the --forbid identity terms included, still applies.
+ *
  * The built-in word and name lists are stored as truncated SHA-256 hashes of the lower-case
  * phrase (1 to 3 words), so this file neither spells them out nor matches itself.
  */
@@ -42,6 +51,12 @@ const HASHED = {
     '20b054f22781a9c1', '4a8e6dcfd1ea2c1c', '1d740452c2bcda8b', '2d207f293fed905a'
   ]
 };
+// Hashed words that may appear in the bibliography as part of a proper name (see the header).
+const BIBLIOGRAPHY = ['assets/js/adcs-resources.js'];
+const PROPER_NAME_OK = new Set(['adba6c0ec8a8d89e']);
+// Bibliography lines whose years are publication metadata, and the marker for a reviewed exception.
+const BIB_YEAR_KEY = /^\s*(id|title|year|venue|url|checked)\s*:/;
+const BIB_YEAR_MARK = /privacy-scan: publication years/;
 const HASH_RULE = new Map();
 Object.keys(HASHED).forEach(function (rule) { HASHED[rule].forEach(function (h) { HASH_RULE.set(h, rule); }); });
 function hash(s) { return crypto.createHash('sha256').update(s).digest('hex').slice(0, 16); }
@@ -105,8 +120,28 @@ function context(text, idx, len) {
   return text.slice(a, b).replace(/\s+/g, ' ').trim();
 }
 
+/* Token i is capitalised and joined by a single space to a capitalised neighbour or to a following "of". */
+function inProperName(text, toks, i) {
+  const t = toks[i];
+  if (!/^[A-Z]/.test(text.charAt(t.i))) return false;
+  const prev = toks[i - 1], next = toks[i + 1];
+  const prevOk = prev && text.slice(prev.e, t.i) === ' ' && /^[A-Z]/.test(text.charAt(prev.i));
+  const nextOk = next && text.slice(t.e, next.i) === ' ' && (/^[A-Z]/.test(text.charAt(next.i)) || next.s === 'of');
+  return !!(prevOk || nextOk);
+}
+
+/* In the bibliography: is the year at idx on a metadata line, or on or just below a marked line? */
+function bibPublicationYear(text, idx) {
+  const start = text.lastIndexOf('\n', idx - 1) + 1;
+  const end = text.indexOf('\n', idx);
+  const line = text.slice(start, end < 0 ? text.length : end);
+  const prev = start > 0 ? text.slice(text.lastIndexOf('\n', start - 2) + 1, start - 1) : '';
+  return BIB_YEAR_KEY.test(line) || BIB_YEAR_MARK.test(line) || (/^\s*\/\//.test(prev) && BIB_YEAR_MARK.test(prev));
+}
+
 function scanText(text, rel, forbid, siteFiles, findings, warnings) {
   const isVendor = rel.indexOf('assets/vendor/') === 0;
+  const isBib = BIBLIOGRAPHY.indexOf(rel) >= 0;
   function add(list, idx, len, rule) {
     const lc = lineCol(text, idx);
     list.push({ file: rel, line: lc.line, col: lc.col, rule: rule, match: text.substr(idx, len), ctx: context(text, idx, len) });
@@ -145,7 +180,9 @@ function scanText(text, rel, forbid, siteFiles, findings, warnings) {
         if (!/^[ \t-]{1,3}$/.test(gap)) break;
         phrase += ' ' + toks[i + n - 1].s;
       }
-      const rule = HASH_RULE.get(hash(phrase));
+      const h = hash(phrase);
+      const rule = HASH_RULE.get(h);
+      if (rule && isBib && n === 1 && PROPER_NAME_OK.has(h) && inProperName(text, toks, i)) continue;
       if (rule) add(findings, toks[i].i, toks[i + n - 1].e - toks[i].i, rule);
     }
   }
@@ -163,6 +200,7 @@ function scanText(text, rel, forbid, siteFiles, findings, warnings) {
     while ((m = YEAR_RE.exec(text))) {
       // allow-list: a number right after "seed", "seeds 7 and" or "baseSeed:" is a random seed (plan §8.3), not a date
       if (SEED_BEFORE.test(text.slice(Math.max(0, m.index - 16), m.index))) continue;
+      if (isBib && bibPublicationYear(text, m.index)) continue;
       add(warnings, m.index, m[0].length, 'year (check it is not a study date)');
     }
   }

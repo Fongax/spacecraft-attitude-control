@@ -19,6 +19,8 @@
 <script defer src="../assets/js/adcs-ui.js"></script>
 <script defer src="../assets/js/adcs-plot.js"></script>
 <script defer src="../assets/js/adcs-wire.js"></script>
+<script defer src="../assets/js/adcs-resources.js"></script>
+<script defer src="../assets/js/adcs-reading.js"></script>
 <script defer src="components.js"></script>
 <style>
   /* Kitchen-sink layout only (not part of the UI kit). */
@@ -63,6 +65,7 @@
         <li><a href="#k-tables">Tables and matrix</a></li>
         <li><a href="#k-maths">Equations and terms</a></li>
         <li><a href="#k-files">Files and status</a></li>
+        <li><a href="#k-reading">Further reading</a></li>
       </ul>
     </nav>
 
@@ -82,7 +85,7 @@
         <p class="prereqs" id="demo-prereqs"></p>
       </header>
       <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>ADCS.ui.ready(function () {
-  ADCS.ui.mountChrome({ page: 'm05' });   // 'index' | 'simulator' | 'learn' | 'atlas' | 'glossary' | 'about' | 'm01'…'m13'
+  ADCS.ui.mountChrome({ page: 'm05' });   // 'index' | 'simulator' | 'learn' | 'atlas' | 'glossary' | 'resources' | 'about' | 'm01'…'m13'
 });
 // Module pages: empty &lt;nav class="module-pager"&gt;, [data-auto="prereqs"], [data-auto="simlinks"]
 // and [data-auto="objectives"] are filled from ADCS.data. Parts on their own:
@@ -321,6 +324,16 @@ ADCS.ui.announce('Run complete');                       // shared polite live re
 ADCS.ui.simLink('T03 safe-mode upset', 'preset=T03');   // or { preset: 'T03', gap: 1 }
 ADCS.ui.fmt(-0.01234, { sig: 3, unit: 'deg/s' });       // "−0.0123 deg/s"
 ADCS.ui.storage.get('adcs-read', []);                   // never throws</code></pre></div></details>
+    </section>
+
+    <!-- ============================================================ further reading -->
+    <section class="k-section" id="k-reading" aria-labelledby="k-reading-h">
+      <h2 id="k-reading-h">Further reading</h2>
+      <p>Reading cards from <code>ADCS.resources</code> (load <code>adcs-resources.js</code> and <code>adcs-reading.js</code> after <code>adcs-ui.js</code>). Module pages get theirs from <code>mountChrome</code>, which fills an empty <code>[data-auto="reading"]</code> grouped by level.</p>
+      <div class="k-demo" id="demo-reading"></div>
+      <details class="disclosure"><summary>Code</summary><div class="details-body"><pre><code>ADCS.ui.renderReading(el, { module: 'm11', group: 'level', headingLevel: 3 });   // a module's list
+ADCS.ui.renderReading(el, { items: list, headingLevel: 3, showModules: true });  // any items
+ADCS.reading.apa(item); ADCS.reading.bibtex(item); ADCS.reading.bibtexAll(items);</code></pre></div></details>
     </section>
   </div>
 </main>

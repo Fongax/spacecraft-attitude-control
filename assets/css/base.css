@@ -228,8 +228,12 @@ section[id], [id^="w-"], h2[id], h3[id] { scroll-margin-top: var(--s4); }
   .nav-toggle { display: none; }
   .site-nav { display: block; flex-basis: auto; padding: 0; order: 0; }
   .site-nav ul { flex-direction: row; gap: 2px; }
-  .site-nav a { min-height: var(--hit); padding: 0 var(--s2); font-size: 0.95rem; }
+  .site-nav a { min-height: var(--hit); padding: 0 var(--s2); font-size: 0.95rem; white-space: nowrap; }
   .theme-toggle { order: 1; }
+}
+/* Seven nav items and the full site name do not fit on one row just above the breakpoint. */
+@media (min-width: 900px) and (max-width: 999px) {
+  .brand-sub { display: none; }
 }
 @media (min-width: 1100px) {
   .site-nav a { padding: 0 var(--s3); }

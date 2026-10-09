@@ -3,8 +3,9 @@
  * run-node.js: Node runner for the engine tests.
  * Usage (from the site folder): node tests/run-node.js [--filter text]
  * Loads the shared engine scripts with vm.runInThisContext (the same classic
- * scripts the pages load), then tests/engine.test.js, and exits non-zero on
- * any failure.
+ * scripts the pages load), the data and the further-reading bibliography and
+ * formatters, then tests/engine.test.js and tests/resources.test.js, and exits
+ * non-zero on any failure.
  */
 'use strict';
 const vm = require('vm');
@@ -32,7 +33,10 @@ out('ADCS engine tests (Node ' + process.version + ')');
 load('assets/js/adcs-math.js');
 load('assets/js/adcs-sim.js');
 load('assets/js/adcs-data.js', true);
+load('assets/js/adcs-resources.js', true);
+load('assets/js/adcs-reading.js', true);
 load('tests/engine.test.js');
+load('tests/resources.test.js', true);
 
 const T = globalThis.ADCSTests;
 let lastGroup = '';

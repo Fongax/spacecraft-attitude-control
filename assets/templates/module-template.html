@@ -21,6 +21,9 @@
 <script defer src="assets/js/adcs-ui.js"></script>
 <script defer src="assets/js/adcs-plot.js"></script>
 <script defer src="assets/js/adcs-wire.js"></script>
+<!-- Further reading: the bibliography and its renderer (fill [data-auto="reading"] below). -->
+<script defer src="assets/js/adcs-resources.js"></script>
+<script defer src="assets/js/adcs-reading.js"></script>
 <script defer src="assets/js/pages/{{MODULE_ID}}.js"></script>
 </head>
 <body data-page="{{MODULE_ID}}">
@@ -32,6 +35,7 @@
       <a href="learn.html">Learn</a>
       <a href="atlas.html">Atlas</a>
       <a href="glossary.html">Glossary</a>
+      <a href="resources.html">Resources</a>
       <a href="about.html">About</a>
     </nav>
   </noscript>
@@ -104,20 +108,30 @@
       <ul data-auto="simlinks"></ul>
     </aside>
 
-    <!-- 5. Quiz: three predict-then-reveal items, rendered by ADCS.ui.quiz into #quiz. -->
+    <!-- 5. Further reading: left empty, [data-auto="reading"] is filled by mountChrome from ADCS.resources
+         (items whose modules include {{MODULE_ID}}, grouped Introductory → Intermediate → Advanced). -->
+    <section id="further-reading" class="further-reading" aria-labelledby="further-reading-title">
+      <h2 id="further-reading-title">Further reading</h2>
+      <p class="further-reading-lead">Free papers, books, courses and reports that take this module further, from a first read to the research behind it. Each card says why it is worth your time, and “Cite” gives a reference to copy.</p>
+      <p class="further-reading-all"><a href="resources.html#m={{MODULE_ID}}">All resources for this module</a>, with filters, sorting and a BibTeX export</p>
+      <div data-auto="reading"></div>
+      <noscript><p>The reading list is built from the site’s data and needs JavaScript.</p></noscript>
+    </section>
+
+    <!-- 6. Quiz: three predict-then-reveal items, rendered by ADCS.ui.quiz into #quiz. -->
     <section id="check" class="quiz" aria-labelledby="check-title">
       <h2 id="check-title">Check your understanding</h2>
       <p>Predict the answer first, then check it.</p>
       <div id="quiz"></div>
     </section>
 
-    <!-- 6. "Where this came from": rendered by ADCS.ui.renderProvenance(el, '{{MODULE_ID}}').
+    <!-- 7. "Where this came from": rendered by ADCS.ui.renderProvenance(el, '{{MODULE_ID}}').
          An optional "In short" paragraph may go just above this section. -->
     <section id="provenance" class="provenance">
       <noscript><p>The list of subjects that feed this part needs JavaScript. The <a href="atlas.html">atlas</a> lists every subject.</p></noscript>
     </section>
 
-    <!-- 7. Pager: left empty, filled with the previous and next module by mountChrome, which also puts a
+    <!-- 8. Pager: left empty, filled with the previous and next module by mountChrome, which also puts a
          "Mark this module as read" switch (div.module-read, localStorage 'adcs-read') just before it. -->
     <nav class="module-pager" aria-label="Previous and next module"></nav>
   </article>

@@ -369,7 +369,19 @@
     sim: 'M12 2.5a9.5 9.5 0 1 0 0 19a9.5 9.5 0 1 0 0-19zM10 8l6 4-6 4V8z',
     sliders: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4',
     ring: 'M12 5a7 7 0 1 0 0 14a7 7 0 1 0 0-14z',
-    alert: 'M12 5.5v8M12 18.5h.01'
+    alert: 'M12 5.5v8M12 18.5h.01',
+    // kinds of publication (the further-reading cards)
+    doc: 'M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6',
+    report: 'M6 3h12v18H6zM9.5 17v-3M12 17v-6M14.5 17v-4.5',
+    book: 'M5 5a2 2 0 0 1 2-2h12v15H7a2 2 0 0 0-2 2zM5 20a1.5 1.5 0 0 0 1.5 1H19v-3',
+    handbook: 'M3 5.5c3-1.5 6-1.5 9 0c3-1.5 6-1.5 9 0v13c-3-1.5-6-1.5-9 0c-3-1.5-6-1.5-9 0zM12 5.5v13',
+    course: 'M12 4l9.5 4.5-9.5 4.5-9.5-4.5zM6.5 11v4.5c3.5 2.5 7.5 2.5 11 0V11M21.5 8.5v5',
+    video: 'M3 5h18v14H3zM10 9l5 3-5 3z',
+    standard: 'M12 3l7.5 3v5.5c0 4.5-3.2 8-7.5 9.5c-4.3-1.5-7.5-5-7.5-9.5V6zM8.8 12l2.2 2.2 4.2-4.2',
+    tutorial: 'M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.4 1.1 2.2h5c0-.8.4-1.6 1.1-2.2A6 6 0 0 0 12 3z',
+    code: 'M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16',
+    search: 'M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13zM15.3 15.3L20 20',
+    key: 'M8 10.5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7zM10.5 12.5L20 3M16 7l2.5 2.5M18.5 4.5L21 7'
   };
   const SHAPES = {
     circle: function () { return svg('circle', { cx: 12, cy: 12, r: 8, fill: 'currentColor' }); },
@@ -381,6 +393,7 @@
    * Inline SVG icon (24×24, stroke = currentColor), aria-hidden unless a label is given.
    * Names: check cross dash info warn ext play pause step-back step-fwd reset copy download
    * link menu sun moon system chevron-right chevron-left arrow-right external sim sliders ring alert,
+   * doc report book handbook course video standard tutorial code search key (publication kinds),
    * plus filled shapes circle triangle square.
    * @param {string} name @param {{label?:string, size?:number}} [o] @returns {SVGElement}
    */
@@ -421,6 +434,7 @@
     { id: 'learn', href: 'learn.html', label: 'Learn' },
     { id: 'atlas', href: 'atlas.html', label: 'Atlas' },
     { id: 'glossary', href: 'glossary.html', label: 'Glossary' },
+    { id: 'resources', href: 'resources.html', label: 'Resources' },
     { id: 'about', href: 'about.html', label: 'About' }
   ];
 
@@ -488,6 +502,7 @@
         el('ul', { class: 'footer-links' },
           el('li', null, el('a', { href: BASE + 'about.html' }, 'About')),
           el('li', null, el('a', { href: BASE + 'glossary.html' }, 'Glossary')),
+          el('li', null, el('a', { href: BASE + 'resources.html' }, 'Resources')),
           el('li', null, el('a', { href: BASE + 'about.html#licences' }, 'Licences'))),
         el('p', null, 'Works offline: open ', el('code', null, 'index.html'), ' directly.')));
   }
@@ -591,7 +606,18 @@
     const obj = ui.qs('[data-auto="objectives"]');
     if (obj && isEmpty(obj)) (m.objectives || []).forEach(function (t) { obj.appendChild(el('li', null, t)); });
     fillFedBy(m);
+    fillReading(m);
     fillReadToggle(m, pager);
+  }
+
+  /**
+   * "Further reading" list from ADCS.resources, grouped by level, in an empty [data-auto="reading"]
+   * (needs adcs-reading.js, which adds ui.renderReading; without it the slot stays empty).
+   */
+  function fillReading(m) {
+    const slot = ui.qs('[data-auto="reading"]');
+    if (!slot || !isEmpty(slot) || typeof ui.renderReading !== 'function') return;
+    ui.renderReading(slot, { module: m.id, group: 'level', headingLevel: 3 });
   }
 
   /** Hero line "Fed by N subjects from M disciplines" with a dot and count per discipline (links to #provenance). */
@@ -653,9 +679,11 @@
   /**
    * Inject the global chrome: skip link, header with navigation and theme toggle, footer, and on
    * module pages the breadcrumb, module strip, pager and empty [data-auto] parts (prereqs,
-   * simlinks, objectives). Replaces [data-chrome="header"|"footer"|"crumbs"] slots when present.
+   * simlinks, objectives, fed, reading, read). Replaces [data-chrome="header"|"footer"|"crumbs"]
+   * slots when present.
    * @param {{page?:string, base?:string}} [opts] page: 'index', 'simulator', 'learn', 'atlas',
-   *   'glossary', 'about' or 'm01'…'m13' (default: body[data-page]); base: link prefix ('../' for tests/)
+   *   'glossary', 'resources', 'about' or 'm01'…'m13' (default: body[data-page]); base: link prefix
+   *   ('../' for tests/)
    * @returns {{header:HTMLElement, footer:HTMLElement}}
    */
   ui.mountChrome = function (opts) {

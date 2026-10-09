@@ -10,14 +10,21 @@
  *   - ES modules and local fetching: module-type scripts, import/export at the start of a line in
  *     .js files, the fetch API and XHR (assets/vendor/ is exempt: the vendored libraries are
  *     unmodified);
- *   - absolute http(s):// URLs, except XML namespace URIs and plain <a href> links in about.html,
- *     README.md and assets/vendor/LICENSES.md (documented external links the site works without);
+ *   - absolute http(s):// URLs, except XML namespace URIs, plain <a href> links in about.html,
+ *     README.md and assets/vendor/LICENSES.md, and the `url` fields of the bibliography
+ *     assets/js/adcs-resources.js, which the reading cards render as plain <a href> links
+ *     (documented external links the site works without);
  *   - relative href/src/url() targets that do not exist, and #anchors missing from their target
  *     page. Ids that page scripts create from ADCS.data are known: atlas.html#c-<course id>,
  *     glossary.html#g-<term id>, and the chrome's site-nav. Every module's section anchors from
  *     ADCS.data.modules must exist in its page, as must #check and #provenance;
  *   - a module page whose number of figure.widget elements differs from its
- *     ADCS.data.modules[].widgets list (a widget title missing from the page is a warning).
+ *     ADCS.data.modules[].widgets list (a widget title missing from the page is a warning), or
+ *     that lacks its "All resources for this module" link (resources.html#m=<module id>);
+ *   - a resources.html deep link (#m=m05&type=paper,book&level=intro&access=free&q=…&sort=year)
+ *     with an unknown key or value, or whose filters match no item of ADCS.resources; and a
+ *     #fragment with a malformed %-escape.
+ * href and src values are read as HTML, so character references such as &amp; are decoded first.
  * Templates (assets/templates/) resolve links from the site root, and {{placeholder}} links are
  * skipped. Hash values with "=" (simulator deep links such as #preset=T03) are not anchors.
  * --pending-ok reports missing top-level pages (built by other packages) as pending, not errors.
@@ -27,11 +34,14 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const PAGES = ['index.html', 'simulator.html', 'learn.html', 'atlas.html', 'glossary.html', 'about.html', '404.html',
+const PAGES = ['index.html', 'simulator.html', 'learn.html', 'atlas.html', 'glossary.html', 'resources.html', 'about.html', '404.html',
   'm01-requirements.html', 'm02-architecture.html', 'm03-dynamics.html', 'm04-integration.html', 'm05-control.html',
   'm06-actuators.html', 'm07-sensors.html', 'm08-safe-mode.html', 'm09-verification.html', 'm10-software.html',
   'm11-visualisation.html', 'm12-project-risk.html', 'm13-operations.html'];
 const EXTERNAL_OK = ['about.html', 'README.md', 'assets/vendor/LICENSES.md'];
+// The further-reading bibliography: its absolute URLs are allowed only as the value of a `url` field.
+const BIBLIOGRAPHY = 'assets/js/adcs-resources.js';
+const RES_SORTS = ['module', 'year', 'title'];
 const CHROME_IDS = ['site-nav', 'adcs-live'];
 const NS_RE = /^https?:\/\/www\.w3\.org\/(2000\/svg|1999\/xlink|1999\/xhtml|1998\/Math\/MathML|XML\/1998\/namespace)/;
 
@@ -58,15 +68,21 @@ function walk(dir, list) {
 const files = walk(SITE, []);
 
 /* ---------------------------------------------------------------- ids known per page */
-let data = null;
+let data = null, biblio = null;
+const sandbox = { console: console };
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
 try {
-  const sandbox = { console: console };
-  sandbox.globalThis = sandbox;
-  vm.createContext(sandbox);
   vm.runInContext(fs.readFileSync(path.join(SITE, 'assets/js/adcs-data.js'), 'utf8'), sandbox, { filename: 'adcs-data.js' });
   data = sandbox.ADCS && sandbox.ADCS.data;
 } catch (e) {
   report(warnings, 'assets/js/adcs-data.js', 0, 'could not load ADCS.data (' + e.message + '); data-driven anchors are not checked');
+}
+try {
+  vm.runInContext(fs.readFileSync(path.join(SITE, BIBLIOGRAPHY), 'utf8'), sandbox, { filename: 'adcs-resources.js' });
+  biblio = sandbox.ADCS && sandbox.ADCS.resources && Array.isArray(sandbox.ADCS.resources.items) ? sandbox.ADCS.resources : null;
+} catch (e) {
+  report(warnings, BIBLIOGRAPHY, 0, 'could not load ADCS.resources (' + e.message + '); resources.html deep links are not checked');
 }
 const dynamicIds = {};
 if (data) {
@@ -89,6 +105,18 @@ function idsOf(absFile) {
 }
 
 /* ---------------------------------------------------------------- reference checks */
+// HTML attribute values hold character references: "&amp;" is the valid way to write "&" in an href.
+const NAMED_REFS = { amp: '&', quot: '"', apos: '\'', lt: '<', gt: '>' };
+function decodeAttr(s) {
+  return s.replace(/&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi, function (m, dec, hex, name) {
+    if (dec) return String.fromCodePoint(Number(dec));
+    if (hex) return String.fromCodePoint(parseInt(hex, 16));
+    const k = name.toLowerCase();
+    return Object.prototype.hasOwnProperty.call(NAMED_REFS, k) ? NAMED_REFS[k] : m;
+  });
+}
+function decodeOr(s, fallback) { try { return decodeURIComponent(s); } catch (e) { return fallback; } }
+
 function checkRef(fromFile, baseDir, ref, line, kind) {
   const r = ref.trim();
   if (!r || r.indexOf('{{') >= 0) return;
@@ -97,11 +125,13 @@ function checkRef(fromFile, baseDir, ref, line, kind) {
   if (/^https?:/i.test(r) || r.indexOf('//') === 0) return; // handled by the absolute-URL rule
   const hashAt = r.indexOf('#');
   const p = (hashAt >= 0 ? r.slice(0, hashAt) : r).split('?')[0];
-  const hash = hashAt >= 0 ? decodeURIComponent(r.slice(hashAt + 1)) : '';
+  const rawHash = hashAt >= 0 ? r.slice(hashAt + 1) : '';
+  const hash = decodeOr(rawHash, null);
+  if (hash === null) { report(errors, fromFile, line, kind + ' has a malformed %-escape in its #fragment: ' + r); return; }
   let target;
   if (!p) target = path.join(SITE, fromFile);
   else if (p.charAt(0) === '/') { report(errors, fromFile, line, kind + ' is root-absolute: ' + r); return; }
-  else target = path.resolve(baseDir, decodeURIComponent(p));
+  else target = path.resolve(baseDir, decodeOr(p, p));
   const tRel = rel(target);
   if (tRel.indexOf('..') === 0) { report(errors, fromFile, line, kind + ' leaves the site folder: ' + r); return; }
   if (!fs.existsSync(target)) {
@@ -111,7 +141,40 @@ function checkRef(fromFile, baseDir, ref, line, kind) {
   }
   if (hash && hash.indexOf('=') < 0 && /\.html?$/i.test(target)) {
     if (!idsOf(target).has(hash)) report(errors, fromFile, line, kind + ' anchor #' + hash + ' not found in ' + tRel);
+  } else if (hash && tRel === 'resources.html') {
+    checkResourcesHash(fromFile, line, kind, rawHash);
   }
+}
+
+/* resources.html#m=m05&type=paper,book&level=intro&access=free&q=…&sort=year: the keys and values
+   resources.js understands, and filters that leave at least one item (the search text is free).
+   Like resources.js, the hash is split on "&" before each value is %-decoded. */
+function checkResourcesHash(fromFile, line, kind, hash) {
+  if (!biblio || !data) { report(warnings, fromFile, line, kind + ' resources.html deep link not checked (data not loaded): #' + hash); return; }
+  const items = biblio.items;
+  const values = function (key) { return new Set(items.map(function (it) { return it[key]; })); };
+  const st = { m: null, type: null, level: null, access: null };
+  hash.split('&').forEach(function (pair) {
+    const i = pair.indexOf('=');
+    const k = i < 0 ? pair : pair.slice(0, i);
+    const v = i < 0 ? '' : decodeOr(pair.slice(i + 1).replace(/\+/g, ' '), pair.slice(i + 1));
+    const bad = function (what) { report(errors, fromFile, line, kind + ' resources.html#' + hash + ': ' + what); };
+    if (k === 'm') { if (!(data.modules || []).some(function (m) { return m.id === v; })) bad('unknown module "' + v + '"'); else st.m = v; }
+    else if (k === 'type') {
+      const ok = values('type');
+      const list = v.split(',');
+      list.forEach(function (t) { if (!ok.has(t)) bad('unknown type "' + t + '"'); });
+      st.type = list;
+    } else if (k === 'level') { if (!values('level').has(v)) bad('unknown level "' + v + '"'); else st.level = v; }
+    else if (k === 'access') { if (!values('access').has(v)) bad('unknown access "' + v + '"'); else st.access = v; }
+    else if (k === 'sort') { if (RES_SORTS.indexOf(v) < 0) bad('unknown sort "' + v + '"'); }
+    else if (k !== 'q') bad('unknown key "' + k + '"');
+  });
+  const n = items.filter(function (it) {
+    return (!st.m || it.modules.indexOf(st.m) >= 0) && (!st.type || st.type.indexOf(it.type) >= 0) &&
+      (!st.level || it.level === st.level) && (!st.access || it.access === st.access);
+  }).length;
+  if (!n) report(errors, fromFile, line, kind + ' resources.html#' + hash + ' matches no resource');
 }
 
 function checkAbsolute(text, fileRel, isHtml) {
@@ -121,6 +184,12 @@ function checkAbsolute(text, fileRel, isHtml) {
     const url = m[0];
     if (NS_RE.test(url)) continue;
     const line = lineOf(text, m.index);
+    if (fileRel === BIBLIOGRAPHY) {
+      if (!/\burl:\s*['"]$/.test(text.slice(Math.max(0, m.index - 12), m.index))) {
+        report(errors, fileRel, line, 'external URL outside a url field of the bibliography: ' + url);
+      }
+      continue;
+    }
     if (EXTERNAL_OK.indexOf(fileRel) >= 0) {
       if (isHtml) {
         const before = text.slice(Math.max(0, m.index - 300), m.index);
@@ -169,7 +238,7 @@ files.forEach(function (abs) {
     checkAbsolute(text, fileRel, true);
     const re = /\b(href|src)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
     let m;
-    while ((m = re.exec(text))) { refs++; checkRef(fileRel, baseDir, m[2] !== undefined ? m[2] : m[3], lineOf(text, m.index), m[1].toLowerCase()); }
+    while ((m = re.exec(text))) { refs++; checkRef(fileRel, baseDir, decodeAttr(m[2] !== undefined ? m[2] : m[3]), lineOf(text, m.index), m[1].toLowerCase()); }
     const st = /<style[^>]*>([\s\S]*?)<\/style>/gi;
     while ((m = st.exec(text))) {
       const u = /url\(\s*["']?([^"')]+)["']?\s*\)/g;
@@ -223,6 +292,9 @@ if (data && Array.isArray(data.modules)) {
     const listed = (mod.widgets || []).length;
     if (figs.length !== listed) {
       report(errors, mod.slug, 0, figs.length + ' figure.widget element(s) in the page, but ADCS.data.modules lists ' + listed + ' widget(s)');
+    }
+    if (html.indexOf('href="resources.html#m=' + mod.id + '"') < 0) {
+      report(errors, mod.slug, 0, 'no "All resources for this module" link (resources.html#m=' + mod.id + ')');
     }
     const titles = [];
     html.replace(/<h3\b[^>]*\bclass="widget-title"[^>]*>([\s\S]*?)<\/h3>/g, function (m, t) {

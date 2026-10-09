@@ -933,3 +933,101 @@ a.sim-link svg { width: 16px; height: 16px; flex: none; }
 .inline-error { margin: var(--s2) 0; }
 .progress-bar { height: 8px; border-radius: 4px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--border); overflow: hidden; }
 .progress-bar > span { display: block; height: 100%; width: 0; background: var(--accent); }
+
+/* ================================================================ further reading (adcs-reading.js) */
+.further-reading { margin-block: var(--s6) var(--s5); }
+.further-reading > h2 { margin-block: 0 var(--s2); }
+.further-reading-lead { max-width: 72ch; margin-block-end: var(--s2); color: var(--text-2); }
+.further-reading-all { margin-block-end: var(--s2); font-size: var(--fs-sm); }
+.further-reading-all a { font-weight: 600; }
+.rd-group { margin-block-start: var(--s5); }
+.rd-group-title { display: flex; align-items: center; gap: var(--s2); margin: 0 0 var(--s1); font-size: var(--fs-md); }
+.rd-group-title .count { font-weight: 500; color: var(--text-2); font-size: var(--fs-sm); }
+.rd-group-title .rd-bars { width: 18px; height: 18px; flex: none; color: var(--accent); }
+.rd-group-note { margin: 0 0 var(--s3); font-size: var(--fs-sm); color: var(--text-2); }
+.rd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .rd-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rd-item { display: flex; margin: 0; min-width: 0; }
+.rd-card {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+  padding: var(--s3) var(--s4) var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  box-shadow: var(--shadow);
+  --scroll-bg: var(--surface);
+}
+.rd-title { margin: 0; font-size: var(--fs-base); line-height: 1.35; }
+.rd-link { overflow-wrap: anywhere; }
+.rd-last { white-space: nowrap; }
+.rd-link .icon { display: inline-block; width: 0.8em; height: 0.8em; margin-inline-start: 0.3em; vertical-align: -0.04em; }
+.rd-byline { margin: 0; font-size: var(--fs-sm); color: var(--text-2); overflow-wrap: anywhere; }
+.rd-authors { color: var(--text); font-weight: 600; }
+.rd-badges { display: flex; flex-wrap: wrap; gap: var(--s1); margin: 0; }
+.rd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0 0.5em;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 650;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.rd-badge svg { width: 1.05em; height: 1.05em; flex: none; }
+.rd-level { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+.rd-access-free { color: var(--ok); border-color: var(--ok); }
+.rd-access-free-registration { color: var(--warn); border-color: var(--warn); border-style: dashed; }
+.rd-why { margin: 0; font-size: var(--fs-sm); }
+.rd-concepts { display: flex; flex-wrap: wrap; gap: var(--s1); margin: 0; padding: 0; list-style: none; }
+.rd-concept {
+  margin: 0;
+  padding: 0 0.6em;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+/* Phones: the first four concepts, then a "+n more" button that shows the rest (two or more). */
+.rd-concept-more { display: none; margin: 0; }
+.rd-more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 0.6em;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  background: none;
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.rd-more:hover { background: var(--accent-soft); }
+@media (pointer: coarse) { .rd-more { min-height: var(--hit); } }
+@media (max-width: 599px) {
+  .rd-concepts-fold:not(.rd-concepts-all) .rd-concept:nth-child(n+5) { display: none; }
+  .rd-concept-more { display: block; }
+}
+.rd-modules { margin: 0; font-size: var(--fs-xs); color: var(--text-2); }
+.rd-modules a { font-weight: 600; white-space: nowrap; }   /* "12 Project & risk" never splits after its number */
+.rd-modules a[aria-current] { color: var(--text); }
+details.disclosure.rd-cite { margin: 0; font-size: var(--fs-sm); }
+.rd-cite-row + .rd-cite-row { margin-block-start: var(--s3); }
+.rd-cite-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin-block-end: var(--s1); }
+.rd-cite-label { margin: 0; font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-2); }
+.rd-apa, .rd-bib { margin: 0; padding: var(--s2) var(--s3); border-radius: var(--r1); background: var(--surface-2); overflow-wrap: anywhere; }
+.rd-apa { padding-inline-start: calc(var(--s3) + 1.5em); text-indent: -1.5em; }
+.rd-bib { font-family: var(--font-mono); font-size: var(--fs-xs); line-height: 1.5; white-space: pre-wrap; }
+.rd-bib code { font: inherit; }
+.rd-empty { color: var(--text-2); font-style: italic; }

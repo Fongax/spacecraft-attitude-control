@@ -18,6 +18,8 @@ information.
   operations (`m01-requirements.html` to `m13-operations.html`).
 - **Atlas** (`atlas.html`): 70 subjects in 8 disciplines and their links to the 13 project parts.
 - **Glossary** (`glossary.html`) and **About** (`about.html`).
+- **Resources** (`resources.html`): 81 free papers, books, courses, standards and reports for further
+  reading, with filters, search and APA and BibTeX references; each module page ends with its own list.
 
 Every number carries an honesty label: Project, Derived, Site default, Illustrative, Extension or
 Analogy. Subjects known only from an outline are shown as "Typical content of this subject".
@@ -35,13 +37,14 @@ Analogy. Subjects known only from an outline are shown as "Typical content of th
 ## Folder structure
 
 ```
-index.html, simulator.html, learn.html, atlas.html, glossary.html, about.html
+index.html, simulator.html, learn.html, atlas.html, glossary.html, resources.html, about.html
 m01-requirements.html … m13-operations.html     the 13 learning modules
 404.html                                       self-contained not-found page
 assets/css/       tokens.css (light/dark design tokens), base.css, components.css, pages/*.css
 assets/js/        adcs-math.js, adcs-sim.js (simulation engine), adcs-data.js (subjects, modules,
                   mappings, glossary), adcs-ui.js (UI kit), adcs-plot.js (canvas plots),
-                  adcs-wire.js (2D wireframe), pages/*.js (one script per page)
+                  adcs-wire.js (2D wireframe), adcs-resources.js and adcs-reading.js (the
+                  further-reading list and its cards), pages/*.js (one script per page)
 assets/vendor/    three.js r128 and KaTeX 0.16.9, unmodified, with LICENSES.md
 assets/templates/ page-template.html and module-template.html for new pages
 tests/            engine tests, the component kitchen sink, privacy and link checks
